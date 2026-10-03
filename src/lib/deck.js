@@ -231,30 +231,45 @@ export function autoScorecard(state) {
   return rows;
 }
 
+// Numbers students can drop onto a slide: computed CRM metrics plus anything they pinned.
+export function metricOptions(state) {
+  const out = autoScorecard(state).map((r, i) => ({
+    id: `m${i}`, label: r.kpi, value: r.value,
+    sub: [r.compare && r.compare !== '—' ? `vs ${r.compare}` : r.change, r.basis.split(' · ')[0]].filter(Boolean).join(' · '),
+    source: r.basis.split(' · ')[0], tone: r.rag === 'G' ? 'good' : r.rag === 'R' ? 'bad' : 'neutral',
+  }));
+  (state.evidence || []).forEach((e) => out.push({ id: e.id, label: e.label, value: String(e.value).split(/[ ,(]/)[0] || e.value, full: e.value, sub: e.fileName, source: e.fileName, tone: 'neutral', pinned: true }));
+  return out;
+}
+
 // ---------------------------------------------------------------- Templates
 const S = (layout, eyebrow, title, hint, extra = {}) => ({ layout, eyebrow, title, hint, ...extra });
 export const TEMPLATES = {
   board: {
-    label: 'Board update — 6 questions',
+    label: 'Board update — 6 questions (visual)',
     slides: [
-      S('cards', 'Executive summary', 'Our answer in one sentence', 'Headline = your recommendation. Four cards: plan realism, biggest risk, where the $100K goes, what changes.', { cards: [{ title: '', body: '', tone: 'neutral' }, { title: '', body: '', tone: 'bad' }, { title: '', body: '', tone: 'good' }, { title: '', body: '', tone: 'neutral' }] }),
-      S('scorecard', 'Business scorecard', 'Where the business stands today', 'Pre-filled from the CRM. Check every row, adjust the status colors, and add a takeaway.', { auto: 'scorecard', subtitle: '2026 actuals and forecast vs. targets' }),
-      S('chart', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'Yes, no or partly — and the two or three numbers that prove it.', { chart: 'plan', stats: [{}, {}, {}] }),
-      S('kpis', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'Each tile: KPI, current value, target and source. Use the spotlight for the one number that matters most.', { kpis: [{}, {}, {}], spotlight: {} }),
-      S('chart', 'Question 3 · Biggest risk', 'Our biggest financial or operating risk', 'One risk. Show the data, the size of the exposure and the timing.', { chart: 'cash', stats: [{}, {}] }),
-      S('decisions', 'Question 4 · Investment', 'Where we would invest the next $100,000', 'Up to three allocations with dollar amounts that add to $100K. “Why now” = the data point behind each.', { items: [{}, {}, {}] }),
-      S('cards', 'Question 5 · Plan changes', 'What we would change in the current plan', 'Assumptions to revise, hires to move, spend to cut or re-time.', { cards: [{}, {}, {}] }),
-      S('kpis', 'Question 6 · Pivot trigger', 'The data point that would change our recommendation', 'A specific metric, threshold and date — and what you would do if it hits.', { kpis: [], spotlight: {} }),
-      S('narrative', 'Management reflection', 'What we see under the noise', 'Optional. Two to four short paragraphs in your own voice, ending with your ask of the board.', { paragraphs: ['', ''] }),
+      S('bignumbers', 'Executive summary', 'Our answer in one sentence', 'Headline = your recommendation. Three big numbers that prove it (use “Insert a number from the CRM”).', { items: [{ icon: 'cash' }, { icon: 'alert' }, { icon: 'target' }] }),
+      S('hero', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'Headline = yes / no / partly. Two numbers beside the chart that prove it.', { chart: 'plan', stats: [{}, {}] }),
+      S('bignumbers', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'Pick the three KPIs the CEO should watch. Insert each from the CRM, then say what it tells the CEO.', { items: [{ icon: 'chart' }, { icon: 'people' }, { icon: 'cash' }] }),
+      S('hero', 'Question 3 · Biggest risk', 'Our biggest financial or operating risk', 'Name one risk in the headline. Show its size and timing.', { chart: 'cash', stats: [{}, {}] }),
+      S('allocation', 'Question 4 · Investment', 'Where we would invest the next $100,000', 'Two to four amounts that add up to $100K, each with the data point behind it.', { items: [{}, {}, {}] }),
+      S('compare', 'Question 5 · Plan changes', 'What we would change in the current plan', 'Each row: what the plan says → what you would change it to → the data point.', { rows: [{ icon: 'flag' }, { icon: 'people' }, { icon: 'cash' }] }),
+      S('kpis', 'Question 6 · Pivot trigger', 'The data point that would change our recommendation', 'One metric, a threshold and a date — and what you would do if it hits.', { kpis: [], spotlight: {} }),
+      S('twocharts', 'Supporting evidence', 'What else the data shows', 'Optional. Two charts that back up your recommendation, with one-line captions.', { chart: 'won_source', chart2: 'arr_risk', captions: ['', ''] }),
     ],
   },
-  exec: {
-    label: 'Executive summary (shorter)',
+  detailed: {
+    label: 'Board update — detailed (more text)',
     slides: [
-      S('cards', 'Executive summary', 'Our recommendation', 'The answer first.', { cards: [{}, {}, {}, {}] }),
-      S('scorecard', 'Scorecard', 'Where we are today', 'Check the pre-filled rows.', { auto: 'scorecard' }),
-      S('chart', 'Evidence', 'What the data shows', 'One chart, three numbers.', { chart: 'won_source', stats: [{}, {}, {}] }),
-      S('decisions', 'Decisions required', 'What we need from the board', 'Numbered asks with “why now”.', { items: [{}, {}] }),
+      S('cards', 'Executive summary', 'Our answer in one sentence', 'Four short cards: plan realism, biggest risk, where the $100K goes, what changes.', { cards: [{ tone: 'neutral' }, { tone: 'bad' }, { tone: 'good' }, { tone: 'neutral' }] }),
+      S('scorecard', 'Business scorecard', 'Where the business stands today', 'Pre-filled from the CRM. Check every row and adjust the status colors.', { auto: 'scorecard', subtitle: '2026 actuals and forecast vs. targets' }),
+      S('chart', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'The two or three numbers that prove your answer.', { chart: 'plan', stats: [{}, {}, {}] }),
+      S('kpis', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'KPI, value, target, source.', { kpis: [{}, {}, {}], spotlight: {} }),
+      S('chart', 'Question 3 · Biggest risk', 'Our biggest financial or operating risk', 'Size and timing of the risk.', { chart: 'cash', stats: [{}, {}] }),
+      S('decisions', 'Question 4 · Investment', 'Where we would invest the next $100,000', 'Up to three allocations with “why now”.', { items: [{}, {}, {}] }),
+      S('cards', 'Question 5 · Plan changes', 'What we would change in the current plan', 'Assumptions, hires, spend.', { cards: [{}, {}, {}] }),
+      S('kpis', 'Question 6 · Pivot trigger', 'The data point that would change our recommendation', 'Metric, threshold, date, action.', { kpis: [], spotlight: {} }),
+      S('narrative', 'Management reflection', 'What we see under the noise', 'Optional reflection and ask.', { paragraphs: ['', ''] }),
     ],
   },
   blank: { label: 'Blank (title slide only)', slides: [] },
@@ -264,7 +279,8 @@ function fillSlide(t, state) {
   const base = { id: slideId(), kind: 'content', verified: false, notes: '', takeaway: '', subtitle: '', ...JSON.parse(JSON.stringify(t)) };
   if (t.auto === 'scorecard') base.rows = autoScorecard(state);
   if (base.chart && !state.data.files[CHARTS.find((c) => c.id === base.chart)?.needs]) base.chart = '';
-  ['cards', 'stats', 'kpis', 'items'].forEach((k) => { if (base[k]) base[k] = base[k].map((x) => ({ title: '', body: '', tone: 'neutral', label: '', value: '', delta: '', note: '', sub: '', why: '', ...x })); });
+  ['cards', 'stats', 'kpis', 'items', 'rows', 'points'].forEach((k) => { if (base[k] && t.auto !== 'scorecard') base[k] = base[k].map((x) => ({ title: '', body: '', tone: 'neutral', label: '', value: '', delta: '', note: '', sub: '', why: '', amount: '', from: '', to: '', ...x })); });
+  if (base.chart2 && !state.data.files[CHARTS.find((c) => c.id === base.chart2)?.needs]) base.chart2 = '';
   return base;
 }
 
@@ -291,15 +307,16 @@ export function newDeck(state, templateId = 'board') {
 }
 
 // ---------------------------------------------------------------- AI prompt (structured JSON)
-const LAYOUT_SPEC = `Allowed slide layouts and their fields:
-- "cards": "cards": [{"title","body","tone"}]  (2–6 insight cards; tone = good | bad | warn | neutral)
-- "scorecard": "rows": [{"kpi","basis","value","compare","change","rag"}]  (rag = G | Y | R; basis must name the source file)
-- "chart": "chart": one chart id, "stats": [{"label","value","delta","note","tone"}]  (1–3 stat callouts beside the chart)
-- "kpis": "kpis": [{"label","value","sub","tone"}] (up to 4 tiles), "spotlight": {"label","value","caption","text"} (one big number)
-- "decisions": "items": [{"title","body","why"}]  (up to 3 numbered recommendations; "why" = the data point)
-- "narrative": "paragraphs": ["..."], "ask": "..."  (dark reflection slide, 2–4 short paragraphs)
-- "bullets": "bullets": ["..."], optional "chart"
-Every slide also has: "layout", "eyebrow" (short section label), "title" (a full-sentence takeaway, not a topic), "subtitle" (period/basis, optional), "takeaway" (one-sentence BOARD TAKEAWAY), "notes" (what the presenter says).`;
+const LAYOUT_SPEC = `Allowed slide layouts (prefer the first six — this is a VISUAL deck):
+- "bignumbers": "items": [{"icon","value","label","sub","tone"}]  (1–3 giant numbers; value ≤ 6 characters like "$888K" or "80%"; label ≤ 8 words; sub = comparison + source file ≤ 8 words)
+- "hero": "chart": chart id, "stats": [{"value","label","tone"}]  (big chart + up to 3 numbers; label ≤ 8 words incl. source file)
+- "allocation": "items": [{"amount","label","why"}]  (amounts like "$40K" that add up to the budget; label ≤ 5 words; why ≤ 10 words incl. source file)
+- "compare": "rows": [{"icon","from","to","why"}]  (plan says → we would change to; ≤ 8 words each; why ≤ 10 words incl. source file)
+- "twocharts": "chart", "chart2", "captions": ["≤ 12 words", "≤ 12 words"]
+- "kpis": "kpis": [] or up to 4 tiles {"label","value","sub","tone"}, "spotlight": {"label","value","caption","text"}  (text ≤ 35 words)
+- "cards", "scorecard", "decisions", "narrative", "bullets" also exist — use them only if a visual layout cannot work.
+icon = up | down | cash | people | target | alert | chart | check | calendar | clock | flag | shield.  tone = good | bad | warn | neutral.
+Every slide also has: "layout", "eyebrow" (2–4 word section label), "title" (the takeaway as a sentence, ≤ 12 words), "takeaway" (≤ 15 words, optional), "notes" (what the presenter says out loud — put explanations here, not on the slide).`;
 
 export function buildAiPrompt(state, deck) {
   const ids = availableCharts(state).map((c) => `${c.id} (${c.label})`).join('; ');
@@ -308,6 +325,7 @@ export function buildAiPrompt(state, deck) {
   return `You are helping a management team build a board presentation (about 3 minutes). Make it look like a professional board deck: every slide title states a conclusion ("The funnel is the problem, not the close"), not a topic ("Pipeline").
 
 RULES
+- VISUAL FIRST: no paragraphs on slides. At most about 40 words of visible text per slide. Lead with numbers and charts; put explanations in "notes".
 - Use ONLY the numbers in the data brief below, or simple calculations from them (show the calculation in a note).
 - Name the source file in every card body, stat note, KPI sub-line or bullet that contains a number, e.g. "(accounts.csv)".
 - If files disagree or the data cannot answer something, say so on the slide instead of guessing.
@@ -330,7 +348,7 @@ ${buildDataBrief(state)}`;
 const str = (v) => (v === null || v === undefined ? '' : typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : JSON.stringify(v));
 
 function normalizeSlide(raw, state) {
-  const layouts = ['cards', 'scorecard', 'chart', 'kpis', 'decisions', 'narrative', 'bullets'];
+  const layouts = ['bignumbers', 'hero', 'twocharts', 'allocation', 'compare', 'image', 'cards', 'scorecard', 'chart', 'kpis', 'decisions', 'narrative', 'bullets'];
   const layout = layouts.includes(raw.layout) ? raw.layout : 'bullets';
   const s = { id: slideId(), kind: 'content', layout, fromAi: true, verified: false,
     eyebrow: str(raw.eyebrow), title: str(raw.title), subtitle: str(raw.subtitle), takeaway: str(raw.takeaway), notes: str(raw.notes) };
@@ -346,6 +364,13 @@ function normalizeSlide(raw, state) {
   if (layout === 'decisions') s.items = arr(raw.items).slice(0, 3).map((c) => pick(c, ['title', 'body', 'why']));
   if (layout === 'narrative') { s.paragraphs = arr(raw.paragraphs).slice(0, 5).map(str); s.ask = str(raw.ask); }
   if (layout === 'bullets') s.bullets = arr(raw.bullets).slice(0, 7).map(str);
+  const icon = (i) => (['up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'flag', 'shield'].includes(i) ? i : 'chart');
+  if (layout === 'bignumbers') s.items = arr(raw.items).slice(0, 3).map((c) => ({ ...pick(c, ['value', 'label', 'sub']), icon: icon(c?.icon), tone: tone(c?.tone) }));
+  if (layout === 'hero') s.stats = arr(raw.stats).slice(0, 3).map((c) => ({ ...pick(c, ['value', 'label']), tone: tone(c?.tone) }));
+  if (layout === 'twocharts') { if (raw.chart2 && chartOk(str(raw.chart2))) s.chart2 = str(raw.chart2); s.captions = arr(raw.captions).slice(0, 2).map(str); }
+  if (layout === 'allocation') s.items = arr(raw.items).slice(0, 4).map((c) => pick(c, ['amount', 'label', 'why']));
+  if (layout === 'compare') s.rows = arr(raw.rows).slice(0, 4).map((c) => ({ ...pick(c, ['from', 'to', 'why']), icon: icon(c?.icon || 'flag') }));
+  if (layout === 'image') s.points = arr(raw.points).slice(0, 3).map((c) => pick(c, ['value', 'label']));
   return s;
 }
 

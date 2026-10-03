@@ -45,6 +45,16 @@ function pdfOps(doc, ops) {
       doc.setCharSpace(0);
     } else if (o.op === 'chart') {
       pdfOps(doc, chartOps(o.data, o));
+    } else if (o.op === 'poly') {
+      const pts = o.points;
+      const deltas = pts.slice(1).map((pt, i) => [(pt[0] - pts[i][0]) * PT, (pt[1] - pts[i][1]) * PT]);
+      doc.setFillColor(...rgb(o.fill));
+      doc.lines(deltas, pts[0][0] * PT, pts[0][1] * PT, [1, 1], 'F', true);
+    } else if (o.op === 'image') {
+      try {
+        const fmt = /^data:image\/png/i.test(o.src) ? 'PNG' : 'JPEG';
+        doc.addImage(o.src, fmt, o.x * PT, o.y * PT, o.w * PT, o.h * PT);
+      } catch { /* unsupported image: skip */ }
     }
   });
 }
@@ -86,6 +96,15 @@ function pptxOps(pres, slide, ops) {
       });
     } else if (o.op === 'chart') {
       nativeChart(pres, slide, o.data, o);
+    } else if (o.op === 'poly') {
+      const xs = o.points.map((p) => p[0]), ys = o.points.map((p) => p[1]);
+      const x = Math.min(...xs), y = Math.min(...ys), w = Math.max(0.01, Math.max(...xs) - x), h = Math.max(0.01, Math.max(...ys) - y);
+      slide.addShape(pres.ShapeType.custGeom, {
+        x, y, w, h, fill: { color: o.fill }, line: { type: 'none' },
+        points: [...o.points.map(([px, py]) => ({ x: px - x, y: py - y })), { close: true }],
+      });
+    } else if (o.op === 'image') {
+      slide.addImage({ data: o.src, x: o.x, y: o.y, w: o.w, h: o.h });
     }
   });
 }

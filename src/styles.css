@@ -248,6 +248,7 @@ h3.sub { margin-top: 10px; }
 .callout.warn { background: var(--warn-soft); border-color: transparent; }
 .callout.warn strong { color: var(--warn); }
 .callout.note { background: var(--paper-2); border-color: transparent; }
+.callout.with-action { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
 /* ---------- Data stage ---------- */
 .dropzone {
@@ -547,6 +548,11 @@ tr.draft input { padding: 6px 8px; min-width: 80px; }
 .item-fields.n4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .item-fields .field.wide { grid-column: 1 / -1; }
 .item-fields input, .item-fields select, .item-fields textarea { padding: 6px 8px; font-size: 13.5px; }
+
+input.too-long { border-color: var(--warn); background: var(--warn-soft); }
+.too-long-note { font-size: 11.5px; color: var(--warn); }
+.image-pick { display: flex; flex-direction: column; gap: 6px; }
+.image-thumb { height: 52px; width: auto; border-radius: 6px; border: 1px solid var(--line); }
 
 /* The slide preview is always a white 16:9 page, like the exported file. */
 .slide-canvas { aspect-ratio: 16 / 9; max-width: 100%; background: #ffffff; color: #231f20; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 4% 4.5% 3%; display: flex; flex-direction: column; overflow: hidden; container-type: inline-size; }

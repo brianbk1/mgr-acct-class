@@ -15,7 +15,53 @@ const TONE = { good: P.good, bad: P.bad, warn: P.amber, neutral: P.green };
 const RAG = { G: P.good, Y: 'D69200', R: P.bad };
 
 // ---------------------------------------------------------------- Layout catalog (also drives the editor)
+export const ICON_NAMES = ['', 'up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'flag', 'shield'];
+
 export const LAYOUTS = {
+  bignumbers: {
+    label: 'Big numbers with icons (1–3)',
+    list: { key: 'items', max: 3, add: { icon: 'chart', value: '', label: '', sub: '', tone: 'neutral' }, fields: [
+      { k: 'value', label: 'Big number', words: 2 }, { k: 'label', label: 'What it is (max 8 words)', words: 8 },
+      { k: 'sub', label: 'Source / comparison (max 8 words)', words: 8 },
+      { k: 'icon', label: 'Icon', options: ['up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'flag', 'shield'] },
+      { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
+    ] },
+  },
+  hero: {
+    label: 'Big chart + key numbers',
+    chart: true,
+    list: { key: 'stats', max: 3, add: { value: '', label: '', tone: 'neutral' }, fields: [
+      { k: 'value', label: 'Number', words: 2 }, { k: 'label', label: 'What it means (max 8 words)', words: 8 },
+      { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
+    ] },
+  },
+  twocharts: {
+    label: 'Two charts side by side',
+    chart: true, chart2: true,
+    list: { key: 'captions', max: 2, strings: true, add: '', label: 'Caption (max 12 words)', words: 12 },
+  },
+  allocation: {
+    label: 'Budget allocation bar',
+    list: { key: 'items', max: 4, add: { label: '', amount: '', why: '' }, fields: [
+      { k: 'amount', label: 'Amount (e.g. $40K)', words: 1 }, { k: 'label', label: 'Where it goes (max 5 words)', words: 5 },
+      { k: 'why', label: 'Why — the data point (max 10 words)', words: 10 },
+    ] },
+  },
+  compare: {
+    label: 'Plan vs. our change (arrows)',
+    list: { key: 'rows', max: 4, add: { icon: 'flag', from: '', to: '', why: '' }, fields: [
+      { k: 'from', label: 'Current plan says (max 8 words)', words: 8 }, { k: 'to', label: 'We would change to (max 8 words)', words: 8 },
+      { k: 'why', label: 'Because (max 10 words)', words: 10 },
+      { k: 'icon', label: 'Icon', options: ['flag', 'up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'shield'] },
+    ] },
+  },
+  image: {
+    label: 'Image + key numbers',
+    image: true,
+    list: { key: 'points', max: 3, add: { value: '', label: '' }, fields: [
+      { k: 'value', label: 'Number', words: 2 }, { k: 'label', label: 'What it means (max 8 words)', words: 8 },
+    ] },
+  },
   cards: {
     label: 'Insight cards (2–6)',
     list: { key: 'cards', max: 6, add: { title: '', body: '', tone: 'neutral' }, fields: [
@@ -32,11 +78,11 @@ export const LAYOUTS = {
     columns: { value: 'Actual', compare: 'Target' },
   },
   chart: {
-    label: 'Chart + stat callouts',
+    label: 'Chart + stat cards',
     chart: true,
     list: { key: 'stats', max: 3, add: { label: '', value: '', delta: '', note: '', tone: 'neutral' }, fields: [
-      { k: 'label', label: 'Label' }, { k: 'value', label: 'Big number' }, { k: 'delta', label: 'Change / comparison' },
-      { k: 'note', label: 'Short note (cite the file)' }, { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
+      { k: 'label', label: 'Label', words: 4 }, { k: 'value', label: 'Big number', words: 2 }, { k: 'delta', label: 'Change / comparison', words: 5 },
+      { k: 'note', label: 'Source file', words: 4 }, { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
     ] },
   },
   kpis: {
@@ -78,7 +124,7 @@ function measureWidth(text, sizePt, { bold, italic, serif }) {
       return canvasCtx.measureText(text).width / 72;
     } catch { noCanvas = true; }
   }
-  return (text.length * sizePt * (bold ? 0.56 : 0.5)) / 72;
+  return (text.length * sizePt * (serif ? (bold ? 0.62 : 0.55) : (bold ? 0.58 : 0.52))) / 72;
 }
 
 function wrap(text, widthIn, size, style) {
@@ -101,11 +147,12 @@ function wrap(text, widthIn, size, style) {
 function fit(text, box, style) {
   const lh = style.lineHeight || 1.22;
   const max = style.size, min = style.min || Math.max(7, Math.round(max * 0.62));
+  const w = box.w / (style.maxLines === 1 ? 1.18 : 1.06); // headroom for font substitution in PowerPoint/Keynote
   for (let s = max; s >= min; s -= 0.5) {
-    const lines = wrap(text, box.w, s, style);
-    if (lines.length * s * lh / 72 <= box.h + 0.001) return { size: s, lines };
+    const lines = wrap(text, w, s, style);
+    if (lines.length * s * lh / 72 <= box.h + 0.001 && (!style.maxLines || lines.length <= style.maxLines)) return { size: s, lines };
   }
-  const lines = wrap(text, box.w, min, style);
+  const lines = wrap(text, w, min, style);
   const fitN = Math.max(1, Math.floor((box.h * 72) / (min * lh)));
   if (lines.length > fitN) { lines.length = fitN; lines[fitN - 1] = lines[fitN - 1].replace(/\s*\S*$/, '') + '…'; }
   return { size: min, lines };
@@ -130,6 +177,8 @@ function Ops() {
       return used;
     },
     chart(data, box) { ops.push({ op: 'chart', ...box, data }); },
+    poly(points, fill) { ops.push({ op: 'poly', points, fill }); },
+    image(src, box) { if (src) ops.push({ op: 'image', src, ...box }); },
   };
 }
 
@@ -154,33 +203,39 @@ function chrome(o, slide, deck, n, total, { dark = false } = {}) {
 }
 
 const bodyBottom = (slide) => (slide.takeaway ? BAR_Y - 0.2 : 6.85);
-export const filled = (arr) => (arr || []).filter((x) => (typeof x === 'string' ? x.trim() : Object.entries(x || {}).some(([k, v]) => k !== 'tone' && k !== 'rag' && String(v ?? '').trim())));
+export const filled = (arr) => (arr || []).filter((x) => (typeof x === 'string' ? x.trim() : Object.entries(x || {}).some(([k, v]) => !['tone', 'rag', 'icon'].includes(k) && String(v ?? '').trim())));
 
 // ---------------------------------------------------------------- Layout renderers
 export function layoutSlide(slide, deck, state, n, total) {
   const o = Ops();
   if (slide.kind === 'title') { titleSlide(o, deck); return o.ops; }
   if (slide.kind === 'evidence') { evidenceSlide(o, slide, deck, state, n, total); return o.ops; }
-  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets }[slide.layout] || bullets;
+  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets, bignumbers, hero, twocharts, allocation, compare, image: imageLayout }[slide.layout] || bullets;
   fn(o, slide, deck, state, n, total);
   return o.ops;
 }
 
 function titleSlide(o, deck) {
   o.rect(0, 0, PAGE.w, PAGE.h, P.dark);
+  if (deck.image) {
+    const box = { x: 7.6, y: 0, w: PAGE.w - 7.6, h: PAGE.h };
+    o.rect(box.x, box.y, box.w, box.h, '123F28');
+    o.image(deck.image, { ...containBox(deck.imageW, deck.imageH, box), clip: box });
+  }
   o.rect(0, 0, 0.18, PAGE.h, P.green2);
   o.text((deck.company || '').toUpperCase(), { x: 0.8, y: 0.75, w: 8, h: 0.35 }, { size: 15, bold: true, color: P.white, spacing: 1.5, caps: true });
   o.text([deck.audience, deck.confidential ? 'Confidential' : ''].filter(Boolean).join('   |   ').toUpperCase(), { x: 0.8, y: 1.15, w: 8, h: 0.25 }, { size: 9.5, bold: true, color: P.mint, spacing: 2, caps: true });
-  const h = o.text(deck.title || '', { x: 0.8, y: 2.25, w: 11.2, h: 1.5 }, { size: 40, bold: true, serif: true, color: P.white, min: 26, lineHeight: 1.08 });
+  const tw = deck.image ? 6.4 : 11.2;
+  const h = o.text(deck.title || '', { x: 0.8, y: 2.25, w: tw, h: 1.5 }, { size: 40, bold: true, serif: true, color: P.white, min: 26, lineHeight: 1.08 });
   const y = 2.25 + h + 0.15;
-  const sh = o.text(deck.subtitle || '', { x: 0.8, y, w: 11, h: 0.5 }, { size: 20, italic: true, serif: true, color: P.mintSoft, min: 13 });
+  const sh = o.text(deck.subtitle || '', { x: 0.8, y, w: tw, h: 0.6 }, { size: 20, italic: true, serif: true, color: P.mintSoft, min: 13 });
   if (deck.health) {
     const col = { Green: P.good, Yellow: 'D69200', Red: P.bad }[deck.health] || P.amber;
-    o.rect(0.8, y + sh + 0.4, 3.0, 0.48, col, null, 0.06);
-    o.text(`BUSINESS HEALTH: ${deck.health.toUpperCase()}`, { x: 0.8, y: y + sh + 0.53, w: 3.0, h: 0.24 }, { size: 10.5, bold: true, color: P.white, align: 'center', spacing: 1, caps: true });
+    o.rect(0.8, y + sh + 0.6, 3.0, 0.48, col, null, 0.06);
+    o.text(`BUSINESS HEALTH: ${deck.health.toUpperCase()}`, { x: 0.8, y: y + sh + 0.73, w: 3.0, h: 0.24 }, { size: 10.5, bold: true, color: P.white, align: 'center', spacing: 1, caps: true });
   }
-  o.text(deck.sourceNote || '', { x: 0.8, y: 5.55, w: 11, h: 0.5 }, { size: 10, color: P.mintSoft, min: 8 });
-  o.text([deck.presenters, deck.date].filter(Boolean).join('   ·   '), { x: 0.8, y: 6.35, w: 11, h: 0.3 }, { size: 11, italic: true, color: P.white, min: 8 });
+  o.text(deck.sourceNote || '', { x: 0.8, y: 5.55, w: tw, h: 0.5 }, { size: 10, color: P.mintSoft, min: 8 });
+  o.text([deck.presenters, deck.date].filter(Boolean).join('   ·   '), { x: 0.8, y: 6.35, w: tw, h: 0.3 }, { size: 11, italic: true, color: P.white, min: 8 });
 }
 
 function cards(o, slide, deck, state, n, total) {
@@ -247,7 +302,7 @@ function statStack(o, stats, x, y0, w, bottom) {
     const y = y0 + i * (h + gap);
     o.rect(x, y, w, h, P.card, P.line);
     o.text((s.label || '').toUpperCase(), { x: x + 0.25, y: y + 0.18, w: w * 0.55, h: 0.22 }, { size: 8, bold: true, color: P.ink3, spacing: 1, caps: true, min: 6.5 });
-    o.text(s.value, { x: x + 0.25, y: y + 0.42, w: w * 0.55, h: 0.5 }, { size: 26, bold: true, serif: true, color: TONE[s.tone] && s.tone !== 'neutral' ? TONE[s.tone] : P.ink, min: 15, lineHeight: 1.05 });
+    o.text(s.value, { x: x + 0.25, y: y + 0.42, w: w * 0.55, h: 0.5 }, { size: 26, bold: true, serif: true, color: TONE[s.tone] && s.tone !== 'neutral' ? TONE[s.tone] : P.ink, min: 11, lineHeight: 1.05, maxLines: 1 });
     const dcol = /^[-−]/.test(String(s.delta || '').trim()) || s.tone === 'bad' ? P.bad : /^\+/.test(String(s.delta || '').trim()) || s.tone === 'good' ? P.good : P.ink2;
     o.text(s.delta, { x: x + 0.25, y: y + h - 0.38, w: w * 0.6, h: 0.24 }, { size: 10, bold: true, color: dcol, min: 7.5 });
     o.text(s.note, { x: x + w * 0.58, y: y + 0.2, w: w * 0.42 - 0.2, h: h - 0.35 }, { size: 9.5, color: P.ink2, min: 7 });
@@ -271,18 +326,22 @@ function chartLayout(o, slide, deck, state, n, total) {
 function kpis(o, slide, deck, state, n, total) {
   chrome(o, slide, deck, n, total);
   const list = filled(slide.kpis).slice(0, 4);
-  const sp = slide.spotlight || {};
-  const hasSpot = [sp.label, sp.value, sp.text].some((v) => String(v || '').trim());
+  let sp = slide.spotlight || {};
+  let hasSpot = [sp.label, sp.value, sp.text].some((v) => String(v || '').trim());
+  if (!list.length && !hasSpot && Array.isArray(slide.kpis) && slide.kpis.length === 0) {
+    sp = { label: 'The number that would change our mind', value: '—', caption: 'Metric · threshold · date', text: 'Fill in the spotlight fields in the editor below: which metric, what threshold, by when — and what you would do if it hits.' };
+    hasSpot = true;
+  }
   const bottom = bodyBottom(slide);
   const gap = 0.25;
   const count = Math.max(1, list.length);
   const w = (PAGE.w - 2 * M - gap * (count - 1)) / count;
   const th = !list.length && hasSpot ? -0.3 : hasSpot ? 1.75 : Math.min(2.6, bottom - BODY_TOP);
-  (list.length || hasSpot ? list : [{ label: 'KPI', value: '—', sub: 'Add up to four KPI tiles' }]).forEach((k, i) => {
+  (list.length || hasSpot ? list : [{ label: 'KPI', value: '—', sub: 'Insert a number from the CRM in the editor below' }]).forEach((k, i) => {
     const x = M + i * (w + gap), y = BODY_TOP;
     o.rect(x, y, w, th, P.card, P.line);
     o.text((k.label || '').toUpperCase(), { x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.4 }, { size: 8.5, bold: true, color: P.ink3, spacing: 1, caps: true, min: 6.5 });
-    o.text(k.value, { x: x + 0.25, y: y + 0.6, w: w - 0.5, h: 0.6 }, { size: 32, bold: true, serif: true, color: TONE[k.tone] && k.tone !== 'neutral' ? TONE[k.tone] : P.ink, min: 18, lineHeight: 1.05 });
+    o.text(k.value, { x: x + 0.25, y: y + 0.6, w: w - 0.5, h: 0.6 }, { size: 32, bold: true, serif: true, color: TONE[k.tone] && k.tone !== 'neutral' ? TONE[k.tone] : P.ink, min: 12, lineHeight: 1.05, maxLines: 1 });
     o.text(k.sub, { x: x + 0.25, y: y + 1.22, w: w - 0.5, h: th - 1.35 }, { size: 10, color: P.ink2, min: 7 });
   });
   if (hasSpot) {
@@ -293,7 +352,7 @@ function kpis(o, slide, deck, state, n, total) {
     o.rect(M, y, PAGE.w - 2 * M, h, P.card, P.bad);
     o.rect(M, y, PAGE.w - 2 * M, 0.05, P.bad);
     o.text((sp.label || 'The number to watch').toUpperCase(), { x: M + 0.4, y: y + 0.3, w: 4.2, h: 0.24 }, { size: 9, bold: true, color: P.bad, spacing: 1.5, caps: true, min: 7 });
-    o.text(sp.value, { x: M + 0.4, y: y + 0.65, w: 4.4, h: only ? 1.2 : 0.9 }, { size: only ? 66 : 48, bold: true, serif: true, color: P.bad, min: 24, lineHeight: 1.0 });
+    o.text(sp.value, { x: M + 0.4, y: y + 0.65, w: 4.4, h: only ? 1.2 : 0.9 }, { size: only ? 66 : 48, bold: true, serif: true, color: P.bad, min: 16, lineHeight: 1.0, maxLines: 1 });
     o.text(sp.caption, { x: M + 0.4, y: y + h - 0.6, w: 4.4, h: 0.35 }, { size: only ? 12.5 : 10, color: P.ink3, min: 7 });
     o.line(M + 5.0, y + 0.35, M + 5.0, y + h - 0.35, P.line, 0.75);
     o.text(sp.text, { x: M + 5.35, y: y + 0.35, w: PAGE.w - 2 * M - 5.75, h: h - 0.7 }, { size: only ? 17 : 14, color: P.ink, min: 8.5, valign: 'middle', lineHeight: 1.32 });
@@ -370,13 +429,186 @@ function evidenceSlide(o, slide, deck, state, n, total) {
   });
 }
 
+
+// ---------------------------------------------------------------- Icons (drawn from primitives so they work everywhere)
+function poly(o, pts, cx, cy, s, fill) {
+  const u = s / 24;
+  o.poly(pts.map(([x, y]) => [cx - s / 2 + x * u, cy - s / 2 + y * u]), fill);
+}
+export function drawIcon(o, name, cx, cy, d, bg, fg = P.white) {
+  o.circle(cx, cy, d / 2, bg);
+  const s = d * 0.56, u = s / 24, X = (x) => cx - s / 2 + x * u, Y = (y) => cy - s / 2 + y * u, R = (x, y, w, h, c = fg) => o.rect(X(x), Y(y), w * u, h * u, c);
+  switch (name) {
+    case 'up': poly(o, [[12, 2], [22, 12], [16, 12], [16, 22], [8, 22], [8, 12], [2, 12]], cx, cy, s, fg); break;
+    case 'down': poly(o, [[12, 22], [22, 12], [16, 12], [16, 2], [8, 2], [8, 12], [2, 12]], cx, cy, s, fg); break;
+    case 'alert': poly(o, [[12, 1.5], [23, 22], [1, 22]], cx, cy, s, fg); R(10.6, 8, 2.8, 8, bg); o.circle(X(12), Y(19), 1.6 * u, bg); break;
+    case 'target': o.circle(cx, cy, s / 2, fg); o.circle(cx, cy, s * 0.34, bg); o.circle(cx, cy, s * 0.2, fg); o.circle(cx, cy, s * 0.07, bg); break;
+    case 'people': o.circle(X(8), Y(7), 3.6 * u, fg); o.circle(X(16.5), Y(7.5), 3 * u, fg); R(2, 12.5, 12, 9.5); R(12.5, 13, 9.5, 8.5); break;
+    case 'cash': R(1, 5, 22, 14); R(3, 7, 18, 10, bg); o.circle(cx, cy, 3.4 * u, fg); break;
+    case 'chart': R(2, 14, 5, 8); R(9.5, 8, 5, 14); R(17, 2, 5, 20); break;
+    case 'check': poly(o, [[2, 12.5], [5.5, 9], [9.5, 13], [18.5, 4], [22, 7.5], [9.5, 20]], cx, cy, s, fg); break;
+    case 'calendar': R(2, 4, 20, 18); R(4, 9, 16, 11, bg); R(6, 11, 4, 3); R(14, 11, 4, 3); R(6, 16, 4, 3); R(6, 1.5, 2.5, 5); R(15.5, 1.5, 2.5, 5); break;
+    case 'clock': o.circle(cx, cy, s / 2, fg); o.circle(cx, cy, s * 0.4, bg); R(11, 5.5, 2, 7.5); R(11, 11, 6, 2); break;
+    case 'flag': R(3, 2, 2.5, 20); poly(o, [[5.5, 3], [21, 3], [17, 8.5], [21, 14], [5.5, 14]], cx, cy, s, fg); break;
+    case 'shield': poly(o, [[12, 1.5], [21, 5], [20, 14], [12, 22.5], [4, 14], [3, 5]], cx, cy, s, fg); break;
+    default: break;
+  }
+}
+const toneColor = (t) => (TONE[t] && t !== 'neutral' ? TONE[t] : P.green);
+
+export function containBox(iw, ih, box) {
+  if (!iw || !ih) return { x: box.x, y: box.y, w: box.w, h: box.h };
+  const r = Math.min(box.w / iw, box.h / ih);
+  const w = iw * r, h = ih * r;
+  return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
+}
+
+function bignumbers(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const list = filled(slide.items).slice(0, 3);
+  const items = list.length ? list : (slide.items && slide.items.length ? slide.items : [{}]).slice(0, 3).map((it) => ({ icon: it.icon || 'chart', value: '—', label: 'Insert a number from the CRM', sub: 'Use the picker in the editor below', tone: 'neutral' }));
+  const bottom = bodyBottom(slide), gap = 0.3;
+  const w = (PAGE.w - 2 * M - gap * (items.length - 1)) / items.length;
+  const h = bottom - BODY_TOP;
+  items.forEach((it, i) => {
+    const x = M + i * (w + gap), y = BODY_TOP, col = toneColor(it.tone);
+    o.rect(x, y, w, h, P.card, P.line);
+    o.rect(x, y, w, 0.08, col);
+    const d = Math.min(1.15, h * 0.28);
+    if (it.icon) drawIcon(o, it.icon, x + w / 2, y + 0.35 + d / 2, d, col);
+    const vy = y + (it.icon ? 0.55 + d : 0.6);
+    o.text(it.value, { x: x + 0.2, y: vy, w: w - 0.4, h: 1.0 }, { size: items.length === 1 ? 88 : 60, bold: true, serif: true, color: col, align: 'center', min: 16, lineHeight: 1.0, maxLines: 1 });
+    const ly = vy + (items.length === 1 ? 1.35 : 1.0);
+    const lh = o.text(it.label, { x: x + 0.3, y: ly, w: w - 0.6, h: 0.75 }, { size: 17, bold: true, color: P.ink, align: 'center', min: 11, lineHeight: 1.2 });
+    o.text(it.sub, { x: x + 0.3, y: ly + Math.max(lh, 0.3) + 0.08, w: w - 0.6, h: Math.max(0.3, y + h - (ly + Math.max(lh, 0.3) + 0.08) - 0.2) }, { size: 12, color: P.ink3, align: 'center', min: 8 });
+  });
+}
+
+function hero(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const bottom = bodyBottom(slide);
+  const stats = filled(slide.stats).slice(0, 3);
+  const sw = stats.length ? 3.0 : 0;
+  const data = slide.chart ? chartData(slide.chart, state) : null;
+  const cx = M + (sw ? sw + 0.3 : 0), cw = PAGE.w - M - cx;
+  if (data) o.chart(data, { x: cx, y: BODY_TOP, w: cw, h: bottom - BODY_TOP, big: true });
+  else { o.rect(cx, BODY_TOP, cw, bottom - BODY_TOP, P.card, P.line); o.text('Choose a chart', { x: cx, y: (BODY_TOP + bottom) / 2 - 0.15, w: cw, h: 0.3 }, { size: 13, color: P.ink3, align: 'center' }); }
+  if (!stats.length) return;
+  const gap = 0.2, h = (bottom - BODY_TOP - gap * (stats.length - 1)) / stats.length;
+  stats.forEach((st, i) => {
+    const y = BODY_TOP + i * (h + gap), col = toneColor(st.tone);
+    o.rect(M, y, sw, h, P.card, P.line);
+    o.rect(M, y, 0.08, h, col);
+    const vh = o.text(st.value, { x: M + 0.3, y: y + Math.max(0.15, h / 2 - 0.62), w: sw - 0.45, h: 0.75 }, { size: 40, bold: true, serif: true, color: col, min: 14, lineHeight: 1.0, maxLines: 1 });
+    o.text(st.label, { x: M + 0.3, y: y + Math.max(0.15, h / 2 - 0.62) + vh + 0.08, w: sw - 0.45, h: Math.max(0.3, h / 2) }, { size: 12.5, color: P.ink2, min: 8, lineHeight: 1.2 });
+  });
+}
+
+function twocharts(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const bottom = bodyBottom(slide), gap = 0.3;
+  const w = (PAGE.w - 2 * M - gap) / 2;
+  const caps = slide.captions || [];
+  [slide.chart, slide.chart2].forEach((id, i) => {
+    const x = M + i * (w + gap);
+    const capH = caps[i] && caps[i].trim() ? 0.55 : 0;
+    const data = id ? chartData(id, state) : null;
+    if (data) o.chart(data, { x, y: BODY_TOP, w, h: bottom - BODY_TOP - capH });
+    else { o.rect(x, BODY_TOP, w, bottom - BODY_TOP - capH, P.card, P.line); o.text(`Choose chart ${i + 1}`, { x, y: (BODY_TOP + bottom) / 2 - 0.15, w, h: 0.3 }, { size: 12, color: P.ink3, align: 'center' }); }
+    if (capH) o.text(caps[i], { x: x + 0.1, y: bottom - capH + 0.12, w: w - 0.2, h: capH - 0.1 }, { size: 13, bold: true, color: P.ink, align: 'center', min: 9 });
+  });
+}
+
+const parseAmount = (v) => {
+  const m = String(v || '').replace(/[$,\s]/g, '').match(/^(-?\d+(?:\.\d+)?)([kKmM]?)/);
+  if (!m) return NaN;
+  return Number(m[1]) * (/k/i.test(m[2]) ? 1e3 : /m/i.test(m[2]) ? 1e6 : 1);
+};
+
+function allocation(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const items = filled(slide.items).slice(0, 4);
+  const list = items.length ? items : [{ label: 'Add up to four allocations', amount: '', why: '' }];
+  const amts = list.map((i) => parseAmount(i.amount));
+  const sum = amts.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  const colors = [P.green, '2E8B57', '6BBF8E', 'A9D9BC'];
+  const bottom = bodyBottom(slide);
+  const compact = (v) => (v >= 1e6 ? `$${+(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `$${+(v / 1e3).toFixed(1)}K` : `$${Math.round(v)}`);
+  o.text(sum ? compact(sum) : '$—', { x: M, y: BODY_TOP - 0.05, w: 4.2, h: 0.85 }, { size: 54, bold: true, serif: true, color: P.green, min: 24, lineHeight: 1.0 });
+  o.text(`allocated across ${list.length} priorit${list.length === 1 ? 'y' : 'ies'}`, { x: M + 4.3, y: BODY_TOP + 0.38, w: 6, h: 0.35 }, { size: 15, color: P.ink2, min: 10 });
+  const by = BODY_TOP + 1.05, bh = 0.75, bw = PAGE.w - 2 * M;
+  let x = M;
+  list.forEach((it, i) => {
+    const share = sum ? (Number.isFinite(amts[i]) ? amts[i] : 0) / sum : 1 / list.length;
+    const w = bw * share;
+    if (w <= 0) return;
+    o.rect(x, by, w, bh, colors[i % colors.length]);
+    if (w > 0.8) o.text(`${Math.round(share * 100)}%`, { x, y: by + 0.22, w, h: 0.32 }, { size: 16, bold: true, color: i >= 2 ? P.ink : P.white, align: 'center', min: 9 });
+    x += w;
+  });
+  const gap = 0.3, cw = (bw - gap * (list.length - 1)) / list.length, cy = by + bh + 0.35;
+  list.forEach((it, i) => {
+    const cx = M + i * (cw + gap);
+    o.rect(cx, cy, 0.22, 0.22, colors[i % colors.length]);
+    o.text(it.amount || '', { x: cx + 0.35, y: cy - 0.12, w: cw - 0.35, h: 0.6 }, { size: 30, bold: true, serif: true, color: P.ink, min: 14, lineHeight: 1.0, maxLines: 1 });
+    const lh = o.text(it.label, { x: cx, y: cy + 0.6, w: cw, h: 0.65 }, { size: 16, bold: true, color: P.ink, min: 10, lineHeight: 1.15 });
+    o.text(it.why, { x: cx, y: cy + 0.7 + Math.max(lh, 0.3), w: cw, h: Math.max(0.3, bottom - (cy + 0.7 + Math.max(lh, 0.3))) }, { size: 12, color: P.ink2, min: 8, lineHeight: 1.25 });
+  });
+}
+
+function compare(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const rows = filled(slide.rows).slice(0, 4);
+  const list = rows.length ? rows : [{ icon: 'flag', from: 'What the plan assumes', to: 'What you would change it to', why: '' }];
+  const bottom = bodyBottom(slide);
+  const top = BODY_TOP + 0.35, gap = 0.18;
+  const h = Math.min(1.15, (bottom - top - gap * (list.length - 1)) / list.length);
+  const iconW = 0.95, fw = 3.9, aw = 0.75, tw = 3.9, ww = PAGE.w - 2 * M - iconW - fw - aw - tw - 0.2;
+  const fx = M + iconW, ax = fx + fw, tx = ax + aw, wx = tx + tw + 0.2;
+  o.text('CURRENT PLAN', { x: fx, y: BODY_TOP, w: fw, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
+  o.text('WHAT WE WOULD CHANGE', { x: tx, y: BODY_TOP, w: tw, h: 0.22 }, { size: 9, bold: true, color: P.green2, spacing: 1.5, caps: true });
+  o.text('BECAUSE', { x: wx, y: BODY_TOP, w: ww, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
+  list.forEach((r, i) => {
+    const y = top + i * (h + gap);
+    drawIcon(o, r.icon || 'flag', M + 0.4, y + h / 2, Math.min(0.7, h * 0.75), P.dark);
+    o.rect(fx, y, fw, h, 'E6EAE7');
+    o.text(r.from, { x: fx + 0.25, y: y + 0.15, w: fw - 0.5, h: h - 0.3 }, { size: 15, color: P.ink2, min: 9, valign: 'middle' });
+    poly(o, [[2, 9], [14, 9], [14, 3], [23, 12], [14, 21], [14, 15], [2, 15]], ax + aw / 2, y + h / 2, 0.5, P.green2);
+    o.rect(tx, y, tw, h, 'E1F1E7', P.green2);
+    o.text(r.to, { x: tx + 0.25, y: y + 0.15, w: tw - 0.5, h: h - 0.3 }, { size: 15, bold: true, color: P.green, min: 9, valign: 'middle' });
+    o.text(r.why, { x: wx, y: y + 0.12, w: ww, h: h - 0.24 }, { size: 11.5, color: P.ink2, min: 7.5, valign: 'middle' });
+  });
+}
+
+function imageLayout(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const bottom = bodyBottom(slide);
+  const pts = filled(slide.points).slice(0, 3);
+  const iw = pts.length ? 7.6 : PAGE.w - 2 * M;
+  const box = { x: M, y: BODY_TOP, w: iw, h: bottom - BODY_TOP };
+  o.rect(box.x, box.y, box.w, box.h, 'E6EAE7');
+  if (slide.image) o.image(slide.image, { ...containBox(slide.imageW, slide.imageH, box), clip: box });
+  else o.text('Upload an image: a product screenshot, a customer photo, a chart from another tool', { x: box.x + 0.5, y: box.y + box.h / 2 - 0.3, w: box.w - 1, h: 0.6 }, { size: 13, color: P.ink3, align: 'center' });
+  if (!pts.length) return;
+  const x = M + iw + 0.35, w = PAGE.w - M - x, gap = 0.2;
+  const h = (bottom - BODY_TOP - gap * (pts.length - 1)) / pts.length;
+  pts.forEach((p, i) => {
+    const y = BODY_TOP + i * (h + gap);
+    o.rect(x, y, w, h, P.card, P.line);
+    o.rect(x, y, 0.08, h, P.green);
+    const vh = o.text(p.value, { x: x + 0.3, y: y + Math.max(0.15, h / 2 - 0.6), w: w - 0.45, h: 0.75 }, { size: 38, bold: true, serif: true, color: P.green, min: 13, lineHeight: 1.0, maxLines: 1 });
+    o.text(p.label, { x: x + 0.3, y: y + Math.max(0.15, h / 2 - 0.6) + vh + 0.08, w: w - 0.45, h: Math.max(0.3, h / 2) }, { size: 13, color: P.ink2, min: 8 });
+  });
+}
+
 // ---------------------------------------------------------------- Chart → primitive ops (preview + PDF)
 export function chartOps(data, box) {
   const o = Ops();
   const { x, y, w, h } = box;
   o.rect(x, y, w, h, P.card, P.line);
   const pad = 0.25;
-  const th = o.text(data.title, { x: x + pad, y: y + 0.18, w: w - 2 * pad, h: 0.3 }, { size: 11.5, bold: true, color: P.ink, min: 8 });
+  const big = !!box.big;
+  const th = o.text(data.title, { x: x + pad, y: y + 0.18, w: w - 2 * pad, h: 0.34 }, { size: big ? 14 : 11.5, bold: true, color: P.ink, min: 8 });
   const top = y + 0.3 + th, bottom = y + h - (data.note || data.reference ? 0.62 : 0.3);
   const vals = data.values.map((v) => (Number.isFinite(v) ? v : 0));
   const n = vals.length;
