@@ -45,7 +45,7 @@ export default function Workspace({ state, onGoToLoop }) {
         ))}
       </nav>
       <div className="ws-hint">
-        <strong>Viewing, not deciding.</strong> Click the pin on any number to add it to your evidence board. The board feeds the Analysis step and your board update.
+        <strong>Pin what matters.</strong> Click the pin on any number to save it as evidence. Pinned numbers can be inserted into your slides and are listed in the deck’s evidence appendix.
       </div>
       {active === 'overview' && <Overview state={state} setTab={setTab} />}
       {active === 'accounts' && <Accounts state={state} />}

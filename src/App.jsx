@@ -5,6 +5,7 @@ import { addFiles } from './lib/workspace.js';
 import { buildBrief, buildBoardUpdate } from './lib/brief.js';
 import Coach from './components/Coach.jsx';
 import Workspace from './components/Workspace.jsx';
+import DeckBuilder from './components/DeckBuilder.jsx';
 import EvidenceBoard from './components/EvidenceBoard.jsx';
 import { EvidenceCtx } from './components/WorkspaceKit.jsx';
 import QuestionStage from './stages/QuestionStage.jsx';
@@ -38,7 +39,7 @@ export default function App() {
   const [stageId, setStageId] = useState(saved?.stageId || 'question');
   const startEmpty = !Object.keys((saved?.state || emptyState()).data.files).length;
   // First visit (or nothing loaded yet): open on the CRM workspace with the example case so the app is never an empty shell.
-  const [mode, setMode] = useState(startEmpty ? 'workspace' : 'loop');
+  const [mode, setMode] = useState('workspace');
   const [booting, setBooting] = useState(startEmpty);
   const [panel, setPanel] = useState(null); // 'evidence' | 'brief' | 'board' | 'about'
   const [saveWarn, setSaveWarn] = useState(false);
@@ -98,7 +99,7 @@ export default function App() {
     setState((s) => {
       const fresh = emptyState();
       const learned = [s.pivot.learnings && `Previous loop learned: ${s.pivot.learnings}`, s.decision.choice && `Previous decision: ${s.decision.choice} (${s.pivot.status || 'status not set'}).`].filter(Boolean).join(' ');
-      return { ...fresh, data: s.data, kpis: s.kpis, evidence: s.evidence, question: { ...fresh.question, context: learned } };
+      return { ...fresh, data: s.data, kpis: s.kpis, evidence: s.evidence, deck: s.deck, question: { ...fresh.question, context: learned } };
     });
     setStageId('question');
     window.scrollTo({ top: 0 });
@@ -123,15 +124,16 @@ export default function App() {
             </div>
           </div>
           <div className="mode-toggle" role="tablist" aria-label="View">
-            <button role="tab" aria-selected={mode === 'loop'} className={mode === 'loop' ? 'on' : ''} onClick={() => setMode('loop')}>Decision Loop</button>
             <button role="tab" aria-selected={mode === 'workspace'} className={mode === 'workspace' ? 'on' : ''} onClick={() => setMode('workspace')}>
-              CRM Workspace{fileCount ? <span className="count">{fileCount}</span> : null}
+              CRM{fileCount ? <span className="count">{fileCount}</span> : null}
             </button>
+            <button role="tab" aria-selected={mode === 'deck'} className={mode === 'deck' ? 'on' : ''} onClick={() => setMode('deck')}>Create Deck</button>
+            <button role="tab" aria-selected={mode === 'loop'} className={mode === 'loop' ? 'on' : ''} onClick={() => setMode('loop')}>Decision Loop</button>
           </div>
           <div className="top-actions">
             <button className="btn small" onClick={() => setPanel('evidence')}>Evidence <span className="count">{state.evidence.length}</span></button>
-            <button className="btn small" onClick={() => setPanel('board')}>Board update</button>
-            <button className="btn small" onClick={() => setPanel('brief')}>Decision brief</button>
+            {mode === 'loop' && <button className="btn small" onClick={() => setPanel('board')}>Board update</button>}
+            {mode === 'loop' && <button className="btn small" onClick={() => setPanel('brief')}>Decision brief</button>}
             <button className={`btn small ${armReset ? '' : 'ghost'}`} onClick={reset}>{armReset ? 'Click again to clear' : 'Reset'}</button>
           </div>
         </header>
@@ -153,15 +155,19 @@ export default function App() {
           </section>
         )}
 
-        {mode === 'workspace' ? (
+        {mode === 'deck' ? (
+          <main className="ws-main">
+            <DeckBuilder state={state} setState={setState} goToCrm={() => setMode('workspace')} />
+          </main>
+        ) : mode === 'workspace' ? (
           <main className="ws-main">
             {isExample && (
               <div className="example-banner">
                 <div>
-                  <strong>You are viewing example data.</strong> Northstar Learning Systems is a fictional B2B SaaS company (10 linked CSVs). Explore it like a CRM, then take it through the Decision Loop.
+                  <strong>You are viewing example data.</strong> Northstar Learning Systems is a fictional B2B SaaS company (10 linked CSVs). Review it like a CRM, pin the numbers that matter, then build your management presentation.
                 </div>
                 <div className="row tight">
-                  <button className="btn small primary" onClick={() => go('question')}>Start the Decision Loop</button>
+                  <button className="btn small primary" onClick={() => setMode('deck')}>Create the deck</button>
                   <button className="btn small" onClick={() => go('data')}>Load my own files</button>
                 </div>
               </div>

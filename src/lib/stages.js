@@ -189,6 +189,7 @@ export function emptyState() {
     question: { decision: '', context: '', owner: '', deadline: '', options: ['', ''], stakes: '', changeMind: '', initialLean: '' },
     data: { files: {}, order: [], active: '', source: '', asOf: '', checks: {}, gaps: '' },
     evidence: [],
+    deck: null,
     kpis: [],
     analysis: { grain: 'month', segments: {}, observations: '', assumptions: '', alternatives: '', soWhat: '' },
     decision: { choice: '', rationale: '', confidence: 60, reversibility: 'two-way', biggestRisk: '', invest: '', planChanges: '', premortem: '', notChosen: '' },
