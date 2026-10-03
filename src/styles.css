@@ -525,6 +525,29 @@ tr.draft input { padding: 6px 8px; min-width: 80px; }
 .chip-btn { border: 1px dashed var(--line-2); background: var(--paper); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; color: var(--ink-2); }
 .chip-btn:hover { border-color: var(--navy-2); color: var(--navy); }
 
+
+.filmstrip { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 4px; }
+.film { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 6px; text-align: left; }
+.film:hover { border-color: var(--navy-2); }
+.film.on { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
+.film-num { font: 600 11.5px var(--mono); color: var(--ink-3); text-align: center; }
+.film-img { display: block; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); line-height: 0; }
+.film .badge { margin: 0; }
+.add-slide select { width: 100%; }
+.slide-stage { border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); line-height: 0; }
+.slide-svg { width: 100%; height: auto; display: block; }
+.editor-tools select { width: auto; }
+.hint-box { margin: 0; padding: 10px 12px; border-radius: 9px; background: var(--feature-bg); color: var(--feature-ink); font-size: 13.5px; }
+.list-edit { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.list-edit > .btn { align-self: flex-start; }
+.list-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.list-item.single { padding: 6px; }
+.item-fields { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.item-fields.n6 { grid-template-columns: 1.4fr 1.3fr 1fr 1fr 1fr 0.7fr; }
+.item-fields.n4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.item-fields .field.wide { grid-column: 1 / -1; }
+.item-fields input, .item-fields select, .item-fields textarea { padding: 6px 8px; font-size: 13.5px; }
+
 /* The slide preview is always a white 16:9 page, like the exported file. */
 .slide-canvas { aspect-ratio: 16 / 9; max-width: 100%; background: #ffffff; color: #231f20; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 4% 4.5% 3%; display: flex; flex-direction: column; overflow: hidden; container-type: inline-size; }
 .slide-h { font: 700 clamp(15px, 3.2cqw, 30px)/1.15 var(--serif); color: #006027; margin: 0; }
@@ -577,7 +600,10 @@ tr.draft input { padding: 6px 8px; min-width: 80px; }
   .kv { grid-template-columns: 1fr; }
   .loop-again { flex-direction: column; align-items: flex-start; }
   .deck-meta, .deck-ai, .deck-body { grid-template-columns: minmax(0, 1fr); }
-  .slide-list { position: static; }
+  .slide-list, .filmstrip { position: static; max-height: none; }
+  .filmstrip { flex-direction: row; overflow-x: auto; }
+  .film { min-width: 170px; }
+  .item-fields, .item-fields.n6, .item-fields.n4 { grid-template-columns: minmax(0, 1fr); }
   .slide-cols.with-chart { grid-template-columns: 1fr 1fr; }
   .verify { margin-left: 0; }
 }

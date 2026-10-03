@@ -192,96 +192,197 @@ export function buildDataBrief(state) {
   return L.join('\n');
 }
 
-export const DECK_FORMAT = `Format your answer exactly like this, with no other text:
-
-# Deck title
-## Slide title
-- Bullet (cite the source file in parentheses, e.g. "(accounts.csv)")
-- Bullet
-Chart: one of [CHART_IDS] (optional, one per slide)
-Notes: one or two sentences the presenter will say (optional)
-
-Repeat "## Slide title" for each slide.`;
-
-export function buildAiPrompt(state, deck) {
-  const ids = availableCharts(state).map((c) => c.id).join(', ');
-  const outline = deck.slides.filter((s) => s.kind !== 'title' && s.kind !== 'evidence').map((s, i) => `${i + 1}. ${s.title}`).join('\n');
-  return `You are helping a management team prepare a short board presentation (6–8 slides, about 3 minutes).
-Use ONLY the data in the brief below. Every number you use must appear in the brief or be a simple calculation from it — show the calculation if you do one. Cite the source file for every number. Where the data is ambiguous or files disagree, say so on the slide instead of guessing.
-
-Questions the presentation must answer:
-${outline}
-
-${DECK_FORMAT.replace('[CHART_IDS]', ids)}
-
-${buildDataBrief(state)}`;
+// ---------------------------------------------------------------- Scorecard auto-fill
+export function autoScorecard(state) {
+  const F = state.data.files;
+  const company = F.company?.rows[0];
+  const rows = [];
+  const fin = F.financials ? financialSummary(F.financials.rows, company) : null;
+  const fn = (k) => F[k]?.name || '';
+  const sign = (v, f) => (Number.isFinite(v) ? `${v >= 0 ? '+' : '-'}${f(Math.abs(v))}` : '');
+  if (fin) {
+    rows.push({ kpi: '2026 revenue (actual + forecast)', basis: `${fn('financials')} · full year`, value: money(fin.fyRevenue), compare: Number.isFinite(fin.target) ? money(fin.target) : '—', change: Number.isFinite(fin.vsTarget) ? sign(fin.vsTarget, money) : '', rag: Number.isFinite(fin.vsTarget) ? (fin.vsTarget >= 0 ? 'G' : 'R') : '' });
+    const goal = company ? toNumber(company['2027_revenue_goal']) : NaN;
+    if (Number.isFinite(goal)) rows.push({ kpi: '2027 revenue goal', basis: `${fn('company')} vs 2026`, value: money(goal), compare: money(fin.fyRevenue), change: `+${pct(goal / fin.fyRevenue - 1, 0)} needed`, rag: '' });
+    rows.push({ kpi: `Ending cash (${fin.lastActual?.month?.slice(0, 7) || 'latest'})`, basis: `${fn('financials')} · latest actual`, value: money(fin.cash), compare: Number.isFinite(fin.reserve) ? `${money(fin.reserve)} reserve` : '—', change: Number.isFinite(fin.reserve) ? sign(fin.cash - fin.reserve, money) : '', rag: Number.isFinite(fin.reserve) ? (fin.cash >= fin.reserve ? 'G' : 'R') : '' });
+    rows.push({ kpi: 'Average monthly cash change', basis: `${fn('financials')} · actual months`, value: money(fin.avgBurn), compare: '$0', change: sign(fin.avgBurn, money), rag: fin.avgBurn >= 0 ? 'G' : 'R' });
+    const planGm = F.plan ? toNumber(F.plan.rows.find((r) => /management/i.test(r.scenario))?.gross_margin_pct) : NaN;
+    rows.push({ kpi: 'Gross margin', basis: `${fn('financials')} · actual avg`, value: pct(fin.avgGm), compare: Number.isFinite(planGm) ? `${pct(planGm, 0)} plan` : '—', change: Number.isFinite(planGm) ? `${fin.avgGm >= planGm ? '+' : '-'}${num(Math.abs(fin.avgGm - planGm) * 100, 1)} pts` : '', rag: Number.isFinite(planGm) ? (fin.avgGm >= planGm ? 'G' : 'Y') : '' });
+  }
+  if (F.accounts) {
+    const a = accountsSummary(F.accounts.rows, asOfDate(state));
+    rows.push({ kpi: 'Contracted ARR', basis: `${fn('accounts')} · ${a.count} accounts`, value: money(a.totalArr), compare: '—', change: '', rag: '' });
+    const share = a.riskyArr / a.totalArr;
+    rows.push({ kpi: 'ARR at medium/high churn risk', basis: `${fn('accounts')}`, value: money(a.riskyArr), compare: '—', change: `${pct(share, 0)} of ARR`, rag: share > 0.25 ? 'R' : share > 0.1 ? 'Y' : 'G' });
+  }
+  if (F.opportunities) {
+    const p = pipelineSummary(F.opportunities.rows);
+    rows.push({ kpi: 'Win rate (closed deals)', basis: `${fn('opportunities')}`, value: pct(p.winRate, 0), compare: '—', change: `${p.won.length}W / ${p.lost.length}L`, rag: '' });
+    const t = planPressureTest(state);
+    const planRenew = F.plan ? toNumber(F.plan.rows.find((r) => /management/i.test(r.scenario))?.renewal_rate) : NaN;
+    if (Number.isFinite(t.evidence.renewalWinRate)) rows.push({ kpi: 'Renewal win rate', basis: `${fn('opportunities')} · renewals`, value: pct(t.evidence.renewalWinRate, 0), compare: Number.isFinite(planRenew) ? `${pct(planRenew, 0)} plan` : '—', change: Number.isFinite(planRenew) ? `${t.evidence.renewalWinRate >= planRenew ? '+' : '-'}${num(Math.abs(t.evidence.renewalWinRate - planRenew) * 100, 0)} pts` : '', rag: Number.isFinite(planRenew) ? (t.evidence.renewalWinRate >= planRenew ? 'G' : 'R') : '' });
+    rows.push({ kpi: 'Open pipeline (weighted)', basis: `${fn('opportunities')}`, value: money(p.weighted), compare: money(p.openAmt), change: `${p.open.length} open deals`, rag: '' });
+  }
+  if (F.usage) {
+    const m = usageByMonth(F.usage.rows);
+    const f = m[0], l = m[m.length - 1];
+    rows.push({ kpi: `Product adoption (${l.label})`, basis: `${fn('usage')}`, value: pct(l.adoption), compare: `${pct(f.adoption)} (${f.label})`, change: `${l.adoption >= f.adoption ? '+' : '-'}${num(Math.abs(l.adoption - f.adoption) * 100, 1)} pts`, rag: l.adoption >= f.adoption ? 'G' : 'R' });
+  }
+  return rows;
 }
 
 // ---------------------------------------------------------------- Templates
+const S = (layout, eyebrow, title, hint, extra = {}) => ({ layout, eyebrow, title, hint, ...extra });
 export const TEMPLATES = {
   board: {
     label: 'Board update — 6 questions',
     slides: [
-      { title: 'Is the 2027 growth plan realistic?', chart: 'plan', hint: 'Yes / no / partly — and the two or three numbers that prove it.' },
-      { title: 'Three KPIs for the CEO dashboard', chart: '', hint: 'Name each KPI, its current value, the target, and why it belongs on the dashboard.' },
-      { title: 'Biggest financial or operating risk', chart: 'cash', hint: 'One risk. Show the data, the size of the exposure, and the timing.' },
-      { title: 'Where we would invest the next $100,000', chart: 'winrate_source', hint: 'Dollar split across product, sales, marketing, customer success or new market — and what you would not fund.' },
-      { title: 'What we would change in the current plan', chart: '', hint: 'Assumptions to revise, hires to move, spend to cut or re-time.' },
-      { title: 'The data point that would make us pivot', chart: '', hint: 'A specific metric, threshold and date. What you would do if it hits.' },
+      S('cards', 'Executive summary', 'Our answer in one sentence', 'Headline = your recommendation. Four cards: plan realism, biggest risk, where the $100K goes, what changes.', { cards: [{ title: '', body: '', tone: 'neutral' }, { title: '', body: '', tone: 'bad' }, { title: '', body: '', tone: 'good' }, { title: '', body: '', tone: 'neutral' }] }),
+      S('scorecard', 'Business scorecard', 'Where the business stands today', 'Pre-filled from the CRM. Check every row, adjust the status colors, and add a takeaway.', { auto: 'scorecard', subtitle: '2026 actuals and forecast vs. targets' }),
+      S('chart', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'Yes, no or partly — and the two or three numbers that prove it.', { chart: 'plan', stats: [{}, {}, {}] }),
+      S('kpis', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'Each tile: KPI, current value, target and source. Use the spotlight for the one number that matters most.', { kpis: [{}, {}, {}], spotlight: {} }),
+      S('chart', 'Question 3 · Biggest risk', 'Our biggest financial or operating risk', 'One risk. Show the data, the size of the exposure and the timing.', { chart: 'cash', stats: [{}, {}] }),
+      S('decisions', 'Question 4 · Investment', 'Where we would invest the next $100,000', 'Up to three allocations with dollar amounts that add to $100K. “Why now” = the data point behind each.', { items: [{}, {}, {}] }),
+      S('cards', 'Question 5 · Plan changes', 'What we would change in the current plan', 'Assumptions to revise, hires to move, spend to cut or re-time.', { cards: [{}, {}, {}] }),
+      S('kpis', 'Question 6 · Pivot trigger', 'The data point that would change our recommendation', 'A specific metric, threshold and date — and what you would do if it hits.', { kpis: [], spotlight: {} }),
+      S('narrative', 'Management reflection', 'What we see under the noise', 'Optional. Two to four short paragraphs in your own voice, ending with your ask of the board.', { paragraphs: ['', ''] }),
     ],
   },
   exec: {
-    label: 'Executive summary',
+    label: 'Executive summary (shorter)',
     slides: [
-      { title: 'Executive summary', chart: '', hint: 'The answer first, in three bullets.' },
-      { title: 'Where we are today', chart: 'revenue', hint: 'Revenue, cash, customers.' },
-      { title: 'What is working', chart: 'won_source', hint: 'Evidence of strength.' },
-      { title: 'What is not working', chart: 'arr_risk', hint: 'Evidence of weakness.' },
-      { title: 'Recommendation', chart: '', hint: 'What we should do and what it costs.' },
-      { title: 'Risks and next steps', chart: '', hint: 'What could go wrong; owners and dates.' },
+      S('cards', 'Executive summary', 'Our recommendation', 'The answer first.', { cards: [{}, {}, {}, {}] }),
+      S('scorecard', 'Scorecard', 'Where we are today', 'Check the pre-filled rows.', { auto: 'scorecard' }),
+      S('chart', 'Evidence', 'What the data shows', 'One chart, three numbers.', { chart: 'won_source', stats: [{}, {}, {}] }),
+      S('decisions', 'Decisions required', 'What we need from the board', 'Numbered asks with “why now”.', { items: [{}, {}] }),
     ],
   },
   blank: { label: 'Blank (title slide only)', slides: [] },
 };
 
+function fillSlide(t, state) {
+  const base = { id: slideId(), kind: 'content', verified: false, notes: '', takeaway: '', subtitle: '', ...JSON.parse(JSON.stringify(t)) };
+  if (t.auto === 'scorecard') base.rows = autoScorecard(state);
+  if (base.chart && !state.data.files[CHARTS.find((c) => c.id === base.chart)?.needs]) base.chart = '';
+  ['cards', 'stats', 'kpis', 'items'].forEach((k) => { if (base[k]) base[k] = base[k].map((x) => ({ title: '', body: '', tone: 'neutral', label: '', value: '', delta: '', note: '', sub: '', why: '', ...x })); });
+  return base;
+}
+
 export function newDeck(state, templateId = 'board') {
-  const company = state.data.files.company?.rows[0]?.company_name;
+  const company = state.data.files.company?.rows[0]?.company_name || '';
   const t = TEMPLATES[templateId];
   return {
-    title: company ? `${company}: 2027 plan review` : 'Management presentation',
+    title: company ? `${company}: 2027 Plan Review` : 'Management Presentation',
     subtitle: 'Management team recommendation to the board',
+    company,
+    audience: 'Board of Directors',
+    confidential: true,
+    health: '',
+    sourceNote: state.data.asOf ? `Source: company CRM, finance and product data · as of ${state.data.asOf}` : 'Source: company CRM, finance and product data',
     presenters: '',
+    date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
     template: templateId,
     slides: [
       { id: slideId(), kind: 'title' },
-      ...t.slides.map((s) => ({ id: slideId(), kind: 'content', title: s.title, hint: s.hint, bullets: [''], chart: state.data.files[CHARTS.find((c) => c.id === s.chart)?.needs] ? s.chart : '', notes: '', verified: false })),
-      { id: slideId(), kind: 'evidence', title: 'Evidence appendix' },
+      ...t.slides.map((x) => fillSlide(x, state)),
+      { id: slideId(), kind: 'evidence', title: 'Evidence appendix', eyebrow: 'Appendix' },
     ],
   };
 }
 
-// Parse "# Title / ## Slide / - bullet / Chart: id / Notes: ..." into slides.
+// ---------------------------------------------------------------- AI prompt (structured JSON)
+const LAYOUT_SPEC = `Allowed slide layouts and their fields:
+- "cards": "cards": [{"title","body","tone"}]  (2–6 insight cards; tone = good | bad | warn | neutral)
+- "scorecard": "rows": [{"kpi","basis","value","compare","change","rag"}]  (rag = G | Y | R; basis must name the source file)
+- "chart": "chart": one chart id, "stats": [{"label","value","delta","note","tone"}]  (1–3 stat callouts beside the chart)
+- "kpis": "kpis": [{"label","value","sub","tone"}] (up to 4 tiles), "spotlight": {"label","value","caption","text"} (one big number)
+- "decisions": "items": [{"title","body","why"}]  (up to 3 numbered recommendations; "why" = the data point)
+- "narrative": "paragraphs": ["..."], "ask": "..."  (dark reflection slide, 2–4 short paragraphs)
+- "bullets": "bullets": ["..."], optional "chart"
+Every slide also has: "layout", "eyebrow" (short section label), "title" (a full-sentence takeaway, not a topic), "subtitle" (period/basis, optional), "takeaway" (one-sentence BOARD TAKEAWAY), "notes" (what the presenter says).`;
+
+export function buildAiPrompt(state, deck) {
+  const ids = availableCharts(state).map((c) => `${c.id} (${c.label})`).join('; ');
+  const plan = deck.slides.filter((s) => s.kind === 'content').map((s, i) => `${i + 1}. layout "${s.layout}" · eyebrow "${s.eyebrow || ''}" · ${s.title}${s.hint ? ` — ${s.hint}` : ''}${s.chart ? ` · chart "${s.chart}"` : ''}`).join('\n');
+  const score = deck.slides.find((s) => s.layout === 'scorecard');
+  return `You are helping a management team build a board presentation (about 3 minutes). Make it look like a professional board deck: every slide title states a conclusion ("The funnel is the problem, not the close"), not a topic ("Pipeline").
+
+RULES
+- Use ONLY the numbers in the data brief below, or simple calculations from them (show the calculation in a note).
+- Name the source file in every card body, stat note, KPI sub-line or bullet that contains a number, e.g. "(accounts.csv)".
+- If files disagree or the data cannot answer something, say so on the slide instead of guessing.
+- Answer every question with a clear position.
+
+SLIDES TO WRITE (keep this order and these layouts unless a different layout is clearly better)
+${plan}
+${score ? `\nFor the scorecard slide, start from these computed rows (keep the numbers; you may reorder, drop rows, or change the status):\n${JSON.stringify(score.rows)}` : ''}
+
+${LAYOUT_SPEC}
+Chart ids you may use: ${ids}
+
+OUTPUT: only a JSON object in a \`\`\`json code block, shaped like:
+{"title": "...", "subtitle": "...", "health": "Green|Yellow|Red", "slides": [ { "layout": "cards", "eyebrow": "...", "title": "...", "subtitle": "...", "cards": [...], "takeaway": "...", "notes": "..." } ]}
+
+${buildDataBrief(state)}`;
+}
+
+// ---------------------------------------------------------------- Parsing AI output
+const str = (v) => (v === null || v === undefined ? '' : typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : JSON.stringify(v));
+
+function normalizeSlide(raw, state) {
+  const layouts = ['cards', 'scorecard', 'chart', 'kpis', 'decisions', 'narrative', 'bullets'];
+  const layout = layouts.includes(raw.layout) ? raw.layout : 'bullets';
+  const s = { id: slideId(), kind: 'content', layout, fromAi: true, verified: false,
+    eyebrow: str(raw.eyebrow), title: str(raw.title), subtitle: str(raw.subtitle), takeaway: str(raw.takeaway), notes: str(raw.notes) };
+  const chartOk = (id) => CHARTS.some((c) => c.id === id && state.data.files[c.needs]);
+  if (raw.chart && chartOk(str(raw.chart))) s.chart = str(raw.chart);
+  const arr = (a) => (Array.isArray(a) ? a : []);
+  const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, str(o?.[k])]));
+  const tone = (t) => (['good', 'bad', 'warn', 'neutral'].includes(t) ? t : 'neutral');
+  if (layout === 'cards') s.cards = arr(raw.cards).slice(0, 6).map((c) => ({ ...pick(c, ['title', 'body']), tone: tone(c?.tone) }));
+  if (layout === 'scorecard') s.rows = arr(raw.rows).slice(0, 14).map((r) => ({ ...pick(r, ['kpi', 'basis', 'value', 'compare', 'change']), rag: ['G', 'Y', 'R'].includes(str(r?.rag).toUpperCase()[0]) ? str(r.rag).toUpperCase()[0] : '' }));
+  if (layout === 'chart') s.stats = arr(raw.stats).slice(0, 3).map((c) => ({ ...pick(c, ['label', 'value', 'delta', 'note']), tone: tone(c?.tone) }));
+  if (layout === 'kpis') { s.kpis = arr(raw.kpis).slice(0, 4).map((c) => ({ ...pick(c, ['label', 'value', 'sub']), tone: tone(c?.tone) })); s.spotlight = pick(raw.spotlight || {}, ['label', 'value', 'caption', 'text']); }
+  if (layout === 'decisions') s.items = arr(raw.items).slice(0, 3).map((c) => pick(c, ['title', 'body', 'why']));
+  if (layout === 'narrative') { s.paragraphs = arr(raw.paragraphs).slice(0, 5).map(str); s.ask = str(raw.ask); }
+  if (layout === 'bullets') s.bullets = arr(raw.bullets).slice(0, 7).map(str);
+  return s;
+}
+
+export function parseAiDeck(text, state) {
+  const t = text.replace(/\r/g, '');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) {
+    try {
+      const j = JSON.parse(t.slice(a, b + 1));
+      const slides = (Array.isArray(j.slides) ? j.slides : []).map((x) => normalizeSlide(x || {}, state));
+      if (slides.length) return { title: str(j.title), subtitle: str(j.subtitle), health: ['Green', 'Yellow', 'Red'].find((h) => h.toLowerCase() === str(j.health).toLowerCase()) || '', slides };
+    } catch { /* fall back to outline */ }
+  }
+  return parseOutline(t, state);
+}
+
+// Plain outline fallback: "# Deck title / ## Slide / - bullet / Chart: id / Notes: ..."
 export function parseOutline(text, state) {
-  const ids = new Set(CHARTS.map((c) => c.id));
-  const out = { title: '', slides: [] };
+  const out = { title: '', subtitle: '', health: '', slides: [] };
   let cur = null;
-  text.replace(/\r/g, '').split('\n').forEach((raw) => {
+  text.split('\n').forEach((raw) => {
     const line = raw.trim();
-    if (!line) return;
+    if (!line || line.startsWith('```')) return;
     let m;
     if ((m = line.match(/^#\s+(.*)/)) && !line.startsWith('##')) { out.title = clean(m[1]); return; }
     if ((m = line.match(/^#{2,3}\s*(?:slide\s*\d+[:.)-]?\s*)?(.*)/i))) {
-      cur = { id: slideId(), kind: 'content', title: clean(m[1]), bullets: [], chart: '', notes: '', verified: false, fromAi: true };
+      cur = normalizeSlide({ layout: 'bullets', title: clean(m[1]), bullets: [] }, state);
       out.slides.push(cur);
       return;
     }
     if (!cur) return;
-    if ((m = line.match(/^\**chart\**\s*:\s*`?([a-z_]+)`?/i))) { const id = m[1].toLowerCase(); if (ids.has(id) && state.data.files[CHARTS.find((c) => c.id === id).needs]) cur.chart = id; return; }
+    if ((m = line.match(/^\**chart\**\s*:\s*`?([a-z_]+)`?/i))) { const id = m[1].toLowerCase(); if (CHARTS.some((c) => c.id === id && state.data.files[c.needs])) cur.chart = id; return; }
     if ((m = line.match(/^\**(?:speaker\s+)?notes\**\s*:\s*(.*)/i))) { cur.notes = clean(m[1]); return; }
+    if ((m = line.match(/^\**takeaway\**\s*:\s*(.*)/i))) { cur.takeaway = clean(m[1]); return; }
     if ((m = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)/))) { cur.bullets.push(clean(m[1])); return; }
     cur.bullets.push(clean(line));
   });
-  out.slides.forEach((s) => { if (!s.bullets.length) s.bullets = ['']; });
   return out;
 }
 
@@ -290,23 +391,32 @@ function clean(s) {
 }
 
 // ---------------------------------------------------------------- Citations
+function strings(v, out = []) {
+  if (typeof v === 'string') out.push(v);
+  else if (Array.isArray(v)) v.forEach((x) => strings(x, out));
+  else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => { if (!['id', 'kind', 'layout', 'chart', 'tone', 'rag', 'hint', 'auto'].includes(k)) strings(x, out); });
+  return out;
+}
+
 export function citations(deck, state) {
   const names = state.data.order.map((k) => state.data.files[k]).filter(Boolean).map((f) => ({ key: f.key, name: f.name.toLowerCase(), stem: f.name.toLowerCase().replace(/\.(csv|tsv|txt)$/, '') }));
   const found = [];
   deck.slides.forEach((s) => {
     if (s.kind === 'evidence') {
-      (state.evidence || []).forEach((e) => found.push({ slide: s.id, file: e.file, text: `${e.label}: ${e.value}` }));
+      (state.evidence || []).forEach((e) => found.push({ file: e.file, text: `${e.label}: ${e.value}` }));
       return;
     }
-    (s.bullets || []).forEach((b) => {
-      const lb = b.toLowerCase();
-      const hit = names.filter((n) => lb.includes(n.name) || lb.includes(n.stem));
-      if (hit.length && /\d/.test(b)) hit.forEach((h) => found.push({ slide: s.id, file: h.key, text: b }));
+    if (s.kind !== 'content') return;
+    // The scorecard is pre-filled by the app, so it does not count toward the team's own citations.
+    if (s.layout === 'scorecard') return;
+    const rows = strings(s);
+    rows.forEach((t) => {
+      const lt = t.toLowerCase();
+      const hit = names.filter((n) => lt.includes(n.name) || lt.includes(n.stem));
+      if (hit.length && /\d/.test(t)) hit.forEach((h) => found.push({ file: h.key, text: t }));
     });
   });
-  const points = new Set(found.map((f) => f.text)).size;
-  const files = new Set(found.map((f) => f.file)).size;
-  return { points, files, found };
+  return { points: new Set(found.map((f) => f.text)).size, files: new Set(found.map((f) => f.file)).size, found };
 }
 
 export { fileLabel };
