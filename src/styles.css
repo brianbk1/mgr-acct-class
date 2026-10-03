@@ -13,6 +13,10 @@
   --amber: #008350;
   --amber-soft: #e1f1e7;
   --on-accent: #ffffff;
+  --feature-bg: #e3e6e4;
+  --feature-line: #c9cfcb;
+  --feature-ink: #006027;
+  --feature-ink-2: #3c5a47;
   --good: #1f7a45;
   --good-soft: #dcf0e3;
   --warn: #a8670f;
@@ -44,6 +48,10 @@
     --amber: #5fca93;
     --amber-soft: #1c3527;
     --on-accent: #0c1a12;
+    --feature-bg: #d5d9d7;
+    --feature-line: #bfc6c1;
+    --feature-ink: #006027;
+    --feature-ink-2: #34503f;
     --good: #6ccf98;
     --good-soft: #183326;
     --warn: #e9a752;
@@ -70,6 +78,10 @@
   --amber: #5fca93;
   --amber-soft: #1c3527;
   --on-accent: #0c1a12;
+  --feature-bg: #d5d9d7;
+  --feature-line: #bfc6c1;
+  --feature-ink: #006027;
+  --feature-ink-2: #34503f;
   --good: #6ccf98;
   --good-soft: #183326;
   --warn: #e9a752;
@@ -356,9 +368,10 @@ h3.sub { margin-top: 10px; }
 .trigger .grow { flex: 1; min-width: 200px; padding: 6px 8px; }
 .trigger.fired { border-color: var(--bad); background: var(--bad-soft); }
 tr.draft input { padding: 6px 8px; min-width: 80px; }
-.loop-again { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; border-radius: var(--radius); background: var(--navy); color: var(--on-accent); }
-.loop-again .muted { color: color-mix(in srgb, var(--on-accent) 78%, transparent); margin: 4px 0 0; }
-.loop-again .btn.primary { background: var(--card); border-color: var(--card); color: var(--navy); }
+.loop-again { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; border-radius: var(--radius); background: var(--feature-bg); border: 1px solid var(--feature-line); color: var(--feature-ink); }
+.loop-again strong { color: var(--feature-ink); }
+.loop-again .muted { color: var(--feature-ink-2); margin: 4px 0 0; }
+.loop-again .btn.primary { background: var(--feature-ink); border-color: var(--feature-ink); color: #ffffff; }
 
 /* ---------- Coach ---------- */
 .coach { position: sticky; top: 84px; align-self: start; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 100px); overflow-y: auto; padding-bottom: 12px; }
@@ -391,12 +404,12 @@ tr.draft input { padding: 6px 8px; min-width: 80px; }
 .ws-section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .ws-section-head p { margin: 2px 0 0; font-size: 13px; }
 .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.company-card { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: center; background: var(--navy); color: var(--on-accent); border-radius: 16px; padding: 22px 26px; }
-.company-card h2 { color: var(--on-accent); font-size: 1.8rem; margin: 4px 0 6px; }
-.company-card .muted { color: color-mix(in srgb, var(--on-accent) 75%, transparent); margin: 0; }
-.company-card .eyebrow { color: var(--on-accent); opacity: 0.85; }
-.company-card blockquote { margin: 0; font: 500 1.05rem/1.45 var(--serif); border-left: 3px solid var(--on-accent); padding-left: 14px; }
-.company-card cite { display: block; font: 12px var(--sans); color: color-mix(in srgb, var(--on-accent) 70%, transparent); margin-top: 6px; font-style: normal; }
+.company-card { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: center; background: var(--feature-bg); border: 1px solid var(--feature-line); color: var(--feature-ink); border-radius: 16px; padding: 22px 26px; }
+.company-card h2 { color: var(--feature-ink); font-size: 1.8rem; margin: 4px 0 6px; }
+.company-card .muted { color: var(--feature-ink-2); margin: 0; }
+.company-card .eyebrow { color: var(--feature-ink); }
+.company-card blockquote { margin: 0; font: 500 1.05rem/1.45 var(--serif); color: var(--feature-ink); border-left: 3px solid var(--feature-ink); padding-left: 14px; }
+.company-card cite { display: block; font: 12px var(--sans); color: var(--feature-ink-2); margin-top: 6px; font-style: normal; }
 .watchlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .watchlist li { padding: 9px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .watchlist li:last-child { border: 0; }
