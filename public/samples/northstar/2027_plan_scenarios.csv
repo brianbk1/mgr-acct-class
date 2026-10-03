@@ -1,4 +1,0 @@
-﻿scenario,revenue_growth_pct,renewal_rate,gross_margin_pct,planned_new_hires,marketing_budget,projected_revenue,projected_cogs,projected_payroll,projected_other_opex,projected_ebitda
-Management Plan,0.46,0.9,0.78,4,180000,1197200,263384,1274000,522846,-863030
-Base Case,0.32,0.87,0.78,3,145000,1082400,238128,1215500,481532,-852760
-Downside Case,0.12,0.79,0.75,1,100000,918400,229600,1098500,427512,-837212

@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import SlideSvg from './SlideSvg.jsx';
-import { Badge } from './WorkspaceKit.jsx';
 import { LAYOUTS } from '../lib/slides/layouts.js';
 import {
-  availableCharts, newDeck, parseAiDeck, buildAiPrompt, citations, TEMPLATES, slideId, autoScorecard, metricOptions,
-} from '../lib/deck.js';
+  chartLibrary, slideState, buildPrompt, parseAiResult, looksLikeOurPrompt, starterDeck, starterPlan, slideId, cleanChart,
+} from '../lib/deckModel.js';
+import { callAi, copyText } from '../lib/ai.js';
 
-// Downscale an uploaded image so it fits comfortably in browser storage and the exported files.
+// Reused from mgr-acct-class: same three-step AI flow (copy prompt → paste reply → build),
+// same filmstrip + SVG preview + per-layout editor. Adapted to questionnaire answers.
+
 function readImage(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -29,17 +31,12 @@ function readImage(file) {
   });
 }
 
-function words(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
+const words = (s) => String(s || '').trim().split(/\s+/).filter(Boolean).length;
+const TOPIC_TITLE = /^(executive summary|current state|key problems|problems|opportunities|focus areas|risks|next steps|overview|agenda|background|summary|new slide)$/i;
 
-export default function DeckBuilder({ state, setState, goToCrm }) {
-  const deck = state.deck;
-  const hasData = Object.keys(state.data.files).length > 0;
-  const outdated = deck && deck.slides.some((s) => s.kind === 'content' && !s.layout);
-
-  useEffect(() => {
-    if ((!deck || outdated) && hasData) setState((s) => ({ ...s, deck: newDeck(s, 'board') }));
-  }, [deck, outdated, hasData, setState]);
-
+export default function DeckBuilder({ client, update, sampleReply = '' }) {
+  const deck = client.deck;
+  const state = useMemo(() => slideState(client), [client]);
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState(null);
@@ -48,34 +45,47 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
   const [arm, setArm] = useState('');
   const [undo, setUndo] = useState(null);
 
-  const charts = useMemo(() => availableCharts(state), [state]);
-  const prompt = useMemo(() => (deck && !outdated ? buildAiPrompt(state, deck) : ''), [state, deck, outdated]);
-  const cites = useMemo(() => (deck && !outdated ? citations(deck, state) : { points: 0, files: 0 }), [deck, state, outdated]);
+  const charts = useMemo(() => chartLibrary(client.answers), [client.answers]);
+  const prompt = useMemo(() => buildPrompt(client), [client]);
+  const metrics = useMemo(() => state.facts.map((f, i) => ({ id: `f${i}`, label: f.label.replace(/\s*\(.*?\)\s*$/, '').replace(/\?$/, ''), value: f.value, sub: f.section })), [state.facts]);
 
-  if (!hasData) {
+  const confirmArm = (key, fn) => {
+    if (arm !== key) { setArm(key); setTimeout(() => setArm((a) => (a === key ? '' : a)), 4000); return; }
+    setArm(''); fn();
+  };
+
+  function startFromAnswers() {
+    setUndo({ deck: client.deck || null, plan: client.plan || null });
+    const d = starterDeck(client);
+    update((c) => ({ ...c, deck: d, plan: c.plan && c.plan.rows?.length ? c.plan : starterPlan(c) }));
+    setSel(null);
+    setMsg({ kind: 'tip', text: 'Starter deck built from the answers (and a starter plan if there was none). Headlines are drafts — rewrite them as your conclusions, or use the AI steps above.' });
+  }
+
+  if (!deck) {
     return (
-      <div className="ws-empty">
-        <h2>Load data first</h2>
-        <p>The deck is built from the CRM data. Load the Northstar case or your own CSV files, then come back here.</p>
-        <button className="btn primary" onClick={goToCrm}>Go to the CRM</button>
+      <div className="deck">
+        <AiSteps {...{ prompt, paste, setPaste, busy, showPrompt, setShowPrompt, onCopy: copyPrompt, onBuild: () => build(paste, 'from your AI’s reply') && setPaste(''), onDraft: draftWithAi, deck: null, sampleReply }} />
+        {showPrompt && <textarea className="prompt-box" readOnly value={prompt} rows={12} onFocus={(e) => e.target.select()} />}
+        {msg && <Msg msg={msg} />}
+        <div className="empty-state card">
+          <h2>No deck yet</h2>
+          <p>Use the AI steps above, or start from a deck built directly from the answers (no AI) and edit it.</p>
+          <button className="btn primary" onClick={startFromAnswers}>Start from the answers</button>
+        </div>
       </div>
     );
   }
-  if (!deck || outdated) return null;
 
-  const setDeck = (fn) => setState((s) => ({ ...s, deck: fn(s.deck) }));
+  const setDeck = (fn) => update((c) => ({ ...c, deck: fn(c.deck) }));
   const patchDeck = (p) => setDeck((d) => ({ ...d, ...p }));
   const patchSlide = (id, p) => setDeck((d) => ({ ...d, slides: d.slides.map((x) => (x.id === id ? { ...x, ...p } : x)) }));
   const selected = deck.slides.find((x) => x.id === sel) || deck.slides[1] || deck.slides[0];
   const idx = deck.slides.indexOf(selected);
   const content = deck.slides.filter((x) => x.kind === 'content');
   const unverified = content.filter((x) => !x.verified).length;
-  const citeOk = cites.points >= 5 && cites.files >= 3;
-
-  const confirmArm = (key, fn) => {
-    if (arm !== key) { setArm(key); setTimeout(() => setArm((a) => (a === key ? '' : a)), 4000); return; }
-    setArm(''); fn();
-  };
+  const aiUnverified = content.filter((x) => x.fromAi && !x.verified).length;
+  const topicTitles = content.filter((x) => words(x.title) < 5 || TOPIC_TITLE.test(String(x.title).trim())).length;
 
   function move(id, dir) {
     setDeck((d) => {
@@ -89,66 +99,62 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
   function addSlide(layout = 'cards') {
     const L = LAYOUTS[layout];
     const s = { id: slideId(), kind: 'content', layout, eyebrow: '', title: 'New slide', subtitle: '', takeaway: '', notes: '', verified: false, chart: '' };
-    s[L.list.key] = L.list.strings ? [''] : [{ ...L.list.add }];
+    s[L.list.key] = layout === 'summary' || layout === 'timeline' ? [] : L.list.strings ? [''] : [{ ...L.list.add }];
     if (L.spotlight) s.spotlight = {};
     setDeck((d) => {
       const arr = [...d.slides];
-      const ev = arr.findIndex((x) => x.kind === 'evidence');
-      const at = layout === 'summary' ? 1 : ev >= 0 ? ev : arr.length;
-      arr.splice(at, 0, layout === 'summary' ? { ...s, eyebrow: 'Executive summary', title: 'Our recommendation in one sentence', items: [{}, {}, {}, {}, {}, {}] } : s);
+      const end = arr.findIndex((x) => x.kind === 'facts');
+      arr.splice(layout === 'summary' ? 1 : end >= 0 ? end : arr.length, 0, s);
       return { ...d, slides: arr };
     });
     setSel(s.id);
   }
   function duplicate(s) {
     const copy = { ...JSON.parse(JSON.stringify(s)), id: slideId(), verified: false };
-    setDeck((d) => { const arr = [...d.slides]; arr.splice(arr.indexOf(arr.find((x) => x.id === s.id)) + 1, 0, copy); return { ...d, slides: arr }; });
+    setDeck((d) => { const arr = [...d.slides]; arr.splice(arr.findIndex((x) => x.id === s.id) + 1, 0, copy); return { ...d, slides: arr }; });
     setSel(copy.id);
   }
   function changeLayout(s, layout) {
     const L = LAYOUTS[layout];
     const p = { layout };
-    if (!s[L.list.key] || !s[L.list.key].length) p[L.list.key] = layout === 'scorecard' ? autoScorecard(state) : L.list.strings ? [''] : [{ ...L.list.add }];
+    if (!Array.isArray(s[L.list.key])) p[L.list.key] = layout === 'summary' || layout === 'timeline' ? [] : L.list.strings ? [''] : [{ ...L.list.add }];
     if (L.spotlight && !s.spotlight) p.spotlight = {};
     patchSlide(s.id, p);
   }
-  function importAi(text, source) {
-    if (/DATA BRIEF \(computed from|SLIDES TO WRITE|OUTPUT: only a JSON object/.test(text) && !/"slides"\s*:/.test(text)) {
-      setMsg({ kind: 'warn', text: 'That looks like the prompt from step 1, not the AI’s answer. Paste the prompt into ChatGPT, Claude, Copilot or Gemini first, then paste the AI’s reply here.' });
+
+  // One-click Build from an AI reply, with Undo.
+  function build(text, source) {
+    if (looksLikeOurPrompt(text)) {
+      setMsg({ kind: 'warn', text: 'That looks like the prompt from step 1, not the AI’s answer. Paste the prompt into ChatGPT, Claude or Copilot first, then paste the AI’s reply here.' });
       return false;
     }
-    const parsed = parseAiDeck(text, state);
-    if (!parsed.slides.length) {
-      setMsg({ kind: 'warn', text: 'No slides found in that text. Paste the AI’s whole answer, including the ```json block.' });
+    const parsed = parseAiResult(text);
+    if (!parsed || !parsed.slides.length) {
+      setMsg({ kind: 'warn', text: 'No slides found in that text. Paste the AI’s whole answer, including the ```json block. If the reply was cut off, ask the AI to “continue” and paste both parts.' });
       return false;
     }
-    setUndo(deck);
-    setDeck((d) => {
-      const title = d.slides.find((x) => x.kind === 'title') || { id: slideId(), kind: 'title' };
-      const ev = d.slides.find((x) => x.kind === 'evidence');
-      return { ...d, title: parsed.title || d.title, subtitle: parsed.subtitle || d.subtitle, health: parsed.health || d.health, slides: [title, ...parsed.slides, ...(ev ? [ev] : [])] };
+    setUndo({ deck: client.deck || null, plan: client.plan || null });
+    update((c) => {
+      const base = c.deck || starterDeck(c);
+      const title = base.slides.find((x) => x.kind === 'title') || { id: slideId(), kind: 'title' };
+      const facts = base.slides.find((x) => x.kind === 'facts');
+      return {
+        ...c,
+        deck: { ...base, title: parsed.title || base.title, subtitle: parsed.subtitle || base.subtitle, health: parsed.health || base.health, slides: [title, ...parsed.slides, ...(facts ? [facts] : [])] },
+        plan: parsed.plan || c.plan || starterPlan(c),
+      };
     });
     setSel(parsed.slides[0].id);
-    setMsg({ kind: 'tip', text: `${parsed.slides.length} slides drafted ${source}. AI drafts are marked “AI” until you check each number against the CRM and tick Verified.` });
+    setMsg({ kind: 'tip', text: `Built ${parsed.slides.length} slides${parsed.plan ? ` and a ${parsed.plan.rows.length}-row project plan` : ''} ${source}. AI slides are tagged “AI” until you mark them verified.` });
     return true;
   }
   async function copyPrompt() {
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setMsg({ kind: 'tip', text: 'Copied. Paste it into ChatGPT, Claude, Copilot or Gemini, then paste the whole answer into box 2.' });
-    } catch {
-      setShowPrompt(true);
-      setMsg({ kind: 'note', text: 'Your browser blocked copying. The prompt is shown below — click in it, select all, and copy.' });
-    }
+    if (await copyText(prompt)) setMsg({ kind: 'tip', text: 'Copied. Paste it into ChatGPT, Claude or Copilot, then paste the whole reply into box 2 and click Build.' });
+    else { setShowPrompt(true); setMsg({ kind: 'note', text: 'Your browser blocked copying. The prompt is shown below — click in it, select all, and copy.' }); }
   }
   async function draftWithAi() {
-    setBusy('ai'); setMsg(null);
-    try {
-      const res = await fetch('/api/deck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'The built-in AI is not available on this site. Use steps 1 and 2 with any AI tool instead.');
-      importAi(data.text, 'by the built-in AI');
-    } catch (e) { setMsg({ kind: 'warn', text: e.message }); }
+    setBusy('ai'); setMsg({ kind: 'note', text: 'Drafting… this usually takes 1–3 minutes.' });
+    try { build(await callAi('deck', prompt), 'by the built-in AI'); } catch (e) { setMsg({ kind: 'warn', text: e.message }); }
     setBusy('');
   }
   async function download(kind) {
@@ -156,62 +162,28 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
     try {
       const ex = await import('../lib/slides/backends.js');
       if (kind === 'pptx') await ex.exportPptx(deck, state); else await ex.exportPdf(deck, state);
-      setMsg({ kind: 'tip', text: `${kind === 'pptx' ? 'PowerPoint' : 'PDF'} downloaded.${unverified ? ` ${unverified} slide${unverified > 1 ? 's are' : ' is'} not marked Verified yet.` : ''}` });
+      setMsg({ kind: 'tip', text: `${kind === 'pptx' ? 'PowerPoint' : 'PDF'} downloaded.${unverified ? ` ${unverified} slide${unverified > 1 ? 's are' : ' is'} not marked verified yet.` : ''}` });
     } catch (e) {
-      setMsg({ kind: 'warn', text: `Download failed: ${e.message || e}. If you are on a preview link, open the published site instead.` });
+      setMsg({ kind: 'warn', text: `Download failed: ${e.message || e}` });
     }
     setBusy('');
   }
 
   return (
     <div className="deck">
-      <section className="deck-ai">
-        <div className="deck-ai-step">
-          <span className="step-badge">1</span>
-          <div>
-            <strong>Copy the prompt into your AI tool</strong>
-            <p className="muted small">Copies the CRM numbers, your pinned evidence and the slide plan. Paste it into ChatGPT, Claude, Copilot or Gemini.</p>
-            <div className="row tight">
-              <button className="btn small primary" onClick={copyPrompt}>Copy data + prompt</button>
-              <button className="link small" onClick={() => setShowPrompt((v) => !v)}>{showPrompt ? 'Hide' : 'Show'} prompt</button>
-            </div>
-          </div>
+      <AiSteps {...{ prompt, paste, setPaste, busy, showPrompt, setShowPrompt, onCopy: copyPrompt, onBuild: () => build(paste, 'from your AI’s reply') && setPaste(''), onDraft: draftWithAi, deck, sampleReply }}>
+        <ul className="deck-checks">
+          <li className={aiUnverified === 0 ? 'ok' : ''}><span className="gate-dot">{aiUnverified === 0 ? '✓' : ''}</span>{content.length - unverified} of {content.length} slides verified{aiUnverified ? ` · ${aiUnverified} AI slides to check` : ''}</li>
+          <li className={topicTitles === 0 ? 'ok' : ''}><span className="gate-dot">{topicTitles === 0 ? '✓' : ''}</span>{topicTitles ? `${topicTitles} headline${topicTitles > 1 ? 's read' : ' reads'} like a topic — state the conclusion` : 'Every headline states a conclusion'}</li>
+        </ul>
+        <div className="row tight">
+          <button className="btn small primary" onClick={() => download('pptx')} disabled={!!busy}>{busy === 'pptx' ? 'Building…' : 'Download PowerPoint'}</button>
+          <button className="btn small" onClick={() => download('pdf')} disabled={!!busy}>{busy === 'pdf' ? 'Building…' : 'Download PDF'}</button>
         </div>
-        <div className="deck-ai-step">
-          <span className="step-badge">2</span>
-          <div>
-            <strong>Paste the AI’s reply here</strong>
-            <textarea id="deck-paste" rows={3} value={paste} placeholder="Paste the whole reply, including the ```json block" onChange={(e) => setPaste(e.target.value)} />
-            <div className="row tight">
-              <button className="btn small primary" onClick={() => importAi(paste, 'from your AI answer') && setPaste('')} disabled={!paste.trim()}>Build slides</button>
-              <span className="muted small">or</span>
-              <button className="btn small" onClick={draftWithAi} disabled={!!busy}>{busy === 'ai' ? 'Drafting…' : 'Draft with built-in AI'}</button>
-            </div>
-          </div>
-        </div>
-        <div className="deck-ai-step">
-          <span className="step-badge">3</span>
-          <div>
-            <strong>Check, edit, download</strong>
-            <ul className="deck-checks">
-              <li className={citeOk ? 'ok' : ''}><span className="gate-dot">{citeOk ? '✓' : ''}</span>{cites.points} data points cited in your slides, from {cites.files} files <span className="muted">(need 5 from 3; the pre-filled scorecard doesn’t count)</span></li>
-              <li className={unverified === 0 && content.length ? 'ok' : ''}><span className="gate-dot">{unverified === 0 && content.length ? '✓' : ''}</span>{content.length - unverified} of {content.length} slides verified against the CRM</li>
-            </ul>
-            <div className="row tight">
-              <button className="btn small primary" onClick={() => download('pptx')} disabled={!!busy}>{busy === 'pptx' ? 'Building…' : 'Download PowerPoint'}</button>
-              <button className="btn small" onClick={() => download('pdf')} disabled={!!busy}>{busy === 'pdf' ? 'Building…' : 'Download PDF'}</button>
-            </div>
-          </div>
-        </div>
-      </section>
+      </AiSteps>
 
       {showPrompt && <textarea className="prompt-box" readOnly value={prompt} rows={12} onFocus={(e) => e.target.select()} />}
-      {msg && (
-        <div className={`callout ${msg.kind} with-action`}>
-          <div>{msg.text}</div>
-          {undo && msg.kind === 'tip' && <button className="btn small" onClick={() => { setState((st) => ({ ...st, deck: undo })); setUndo(null); setSel(null); setMsg({ kind: 'note', text: 'Restored your previous slides.' }); }}>Undo</button>}
-        </div>
-      )}
+      {msg && <Msg msg={msg} undo={undo && msg.kind === 'tip' ? () => { update((c) => ({ ...c, deck: undo.deck, plan: undo.plan })); setUndo(null); setSel(null); setMsg({ kind: 'note', text: 'Restored your previous deck and plan.' }); } : null} />}
 
       <div className="deck-body">
         <aside className="filmstrip" aria-label="Slides">
@@ -219,7 +191,7 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
             <button key={s.id} className={`film ${selected?.id === s.id ? 'on' : ''}`} onClick={() => setSel(s.id)}>
               <span className="film-num">{i + 1}</span>
               <span className="film-img"><SlideSvg slide={s} deck={deck} state={state} n={i + 1} total={deck.slides.length} /></span>
-              {s.kind === 'content' && (s.verified ? <Badge tone="good">✓</Badge> : s.fromAi ? <Badge tone="warn">AI</Badge> : null)}
+              {s.kind === 'content' && (s.verified ? <span className="badge good">✓</span> : s.fromAi ? <span className="badge warn">AI</span> : null)}
             </button>
           ))}
           <div className="add-slide">
@@ -228,28 +200,25 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
               {Object.entries(LAYOUTS).map(([k, l]) => <option key={k} value={k}>{l.label}</option>)}
             </select>
           </div>
-          <div className="template-pick">
-            <span className="muted small">Start over from a template</span>
-            {Object.entries(TEMPLATES).map(([k, t]) => (
-              <button key={k} className="link small" onClick={() => confirmArm(`t-${k}`, () => { const fresh = newDeck(state, k); setDeck((d) => ({ ...fresh, title: d.title, subtitle: d.subtitle, presenters: d.presenters, health: d.health })); setSel(null); })}>
-                {arm === `t-${k}` ? 'Click again to replace all slides' : t.label}
-              </button>
-            ))}
-          </div>
+          <button className="link small" style={{ textAlign: 'left' }} onClick={() => confirmArm('restart', startFromAnswers)}>{arm === 'restart' ? 'Click again to replace all slides' : 'Rebuild from the answers (no AI)'}</button>
         </aside>
 
         <div className="slide-work">
           <div className="slide-stage">
             <SlideSvg slide={selected} deck={deck} state={state} n={idx + 1} total={deck.slides.length} />
           </div>
-
           {selected.kind === 'title' && <TitleEditor deck={deck} patchDeck={patchDeck} onError={(t) => setMsg({ kind: 'warn', text: t })} />}
-          {selected.kind === 'evidence' && (
-            <p className="muted small">Lists every number you pinned in the CRM tabs ({(state.evidence || []).length} so far). <button className="link small" onClick={goToCrm}>Pin more in the CRM →</button></p>
+          {selected.kind === 'facts' && (
+            <div className="slide-editor">
+              <p className="muted small" style={{ margin: 0 }}>Appendix: lists every numeric answer from the questionnaire ({state.facts.length}; the first 14 fit on the slide). Delete it if you do not want it.</p>
+              <div className="row tight">
+                <button className="btn ghost small" onClick={() => confirmArm(`del-${selected.id}`, () => { setDeck((d) => ({ ...d, slides: d.slides.filter((x) => x.id !== selected.id) })); setSel(null); })}>{arm === `del-${selected.id}` ? 'Click again to delete' : 'Delete appendix'}</button>
+              </div>
+            </div>
           )}
           {selected.kind === 'content' && (
             <SlideEditor
-              slide={selected} charts={charts} state={state} metrics={metricOptions(state)} onError={(t) => setMsg({ kind: 'warn', text: t })} patch={(p) => patchSlide(selected.id, p)}
+              slide={selected} charts={charts} metrics={metrics} onError={(t) => setMsg({ kind: 'warn', text: t })} patch={(p) => patchSlide(selected.id, p)}
               onMove={(d) => move(selected.id, d)} onDuplicate={() => duplicate(selected)}
               onDelete={() => confirmArm(`del-${selected.id}`, () => { setDeck((d) => ({ ...d, slides: d.slides.filter((x) => x.id !== selected.id) })); setSel(null); })}
               deleteArmed={arm === `del-${selected.id}`} onLayout={(l) => changeLayout(selected, l)}
@@ -261,6 +230,53 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
   );
 }
 
+function Msg({ msg, undo }) {
+  return (
+    <div className={`callout ${msg.kind} with-action`}>
+      <div>{msg.text}</div>
+      {undo && <button className="btn small" onClick={undo}>Undo</button>}
+    </div>
+  );
+}
+
+function AiSteps({ paste, setPaste, busy, setShowPrompt, showPrompt, onCopy, onBuild, onDraft, children, deck, sampleReply }) {
+  return (
+    <section className="deck-ai">
+      <div className="deck-ai-step">
+        <span className="step-badge">1</span>
+        <div>
+          <strong>Copy the prompt into any AI</strong>
+          <p className="muted small">Bundles the answers, your notes and flags, and asks for the deck and plan as JSON.</p>
+          <div className="row tight">
+            <button className="btn small primary" onClick={onCopy}>Copy prompt</button>
+            <button className="link small" onClick={() => setShowPrompt((v) => !v)}>{showPrompt ? 'Hide' : 'Show'} prompt</button>
+          </div>
+        </div>
+      </div>
+      <div className="deck-ai-step">
+        <span className="step-badge">2</span>
+        <div>
+          <strong>Paste the AI’s reply and build</strong>
+          <textarea id="deck-paste" rows={3} value={paste} placeholder="Paste the whole reply, including the ```json block" onChange={(e) => setPaste(e.target.value)} />
+          <div className="row tight">
+            <button className="btn small primary" onClick={onBuild} disabled={!paste.trim()}>Build deck + plan</button>
+            <span className="muted small">or</span>
+            <button className="btn small" onClick={onDraft} disabled={!!busy}>{busy === 'ai' ? 'Drafting…' : 'Draft with AI'}</button>
+          </div>
+          {sampleReply && <button className="link small" style={{ alignSelf: 'flex-start' }} onClick={() => setPaste(sampleReply)}>Fill with the sample AI reply (demo)</button>}
+        </div>
+      </div>
+      <div className="deck-ai-step">
+        <span className="step-badge">3</span>
+        <div>
+          <strong>Check, edit, export</strong>
+          {children || <p className="muted small">{deck ? '' : 'Once built, every slide is editable. AI slides stay tagged until you verify them.'}</p>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TitleEditor({ deck, patchDeck, onError }) {
   const F = (k, label, ph) => (
     <label className="field"><span className="field-label">{label}</span>
@@ -269,20 +285,49 @@ function TitleEditor({ deck, patchDeck, onError }) {
   );
   return (
     <div className="slide-editor">
-      <div className="row">{F('title', 'Presentation title')}{F('subtitle', 'Subtitle', 'e.g. January – September 2026 review')}</div>
+      <div className="row">{F('title', 'Deck title')}{F('subtitle', 'Subtitle')}</div>
       <div className="row three">
-        {F('company', 'Company')}
-        {F('audience', 'Audience', 'Board of Directors')}
-        <label className="field"><span className="field-label">Business health</span>
+        {F('company', 'Client')}
+        {F('audience', 'Audience', 'Leadership team')}
+        <label className="field"><span className="field-label">Overall read</span>
           <select id="deck-health" value={deck.health || ''} onChange={(e) => patchDeck({ health: e.target.value })}>
             <option value="">Not shown</option><option>Green</option><option>Yellow</option><option>Red</option>
           </select>
         </label>
       </div>
-      <div className="row">{F('presenters', 'Team / presenters', 'Team 3: Alvarez, Chen, Okafor')}{F('date', 'Date')}</div>
-      {F('sourceNote', 'Source line')}
-      <ImagePicker label="Cover image (optional — shown on the right of the title slide)" src={deck.image} onPick={(img) => patchDeck({ image: img.src, imageW: img.w, imageH: img.h })} onClear={() => patchDeck({ image: '', imageW: 0, imageH: 0 })} onError={onError} />
+      <div className="row">{F('presenters', 'Presented by')}{F('date', 'Date')}</div>
+      <div className="row">{F('sourceNote', 'Source line')}{F('takeawayLabel', 'Label on the takeaway bar', 'So what')}</div>
+      <ImagePicker label="Cover image or client logo (optional — shown on the right of the title slide)" src={deck.image} onPick={(img) => patchDeck({ image: img.src, imageW: img.w, imageH: img.h })} onClear={() => patchDeck({ image: '', imageW: 0, imageH: 0 })} onError={onError} />
       <label className="inline-check field"><input type="checkbox" checked={!!deck.confidential} onChange={(e) => patchDeck({ confidential: e.target.checked })} /> Mark slides “Confidential”</label>
+    </div>
+  );
+}
+
+function ChartPicker({ id, value, charts, onChange, emptyLabel }) {
+  const custom = value && typeof value === 'object';
+  const c = custom ? value : null;
+  const setC = (p) => onChange({ type: 'bar', title: '', labels: [], values: [], unit: '', source: 'Pre-kickoff questionnaire', ...c, ...p });
+  return (
+    <div className="field">
+      <select id={id} value={custom ? '__custom' : value || ''} onChange={(e) => {
+        const v = e.target.value;
+        if (v === '__custom') setC({ title: 'New chart', labels: ['A', 'B'], values: [1, 2] });
+        else onChange(v);
+      }}>
+        <option value="">{emptyLabel}</option>
+        {charts.length > 0 && <optgroup label="From the answers">{charts.map((ch) => <option key={ch.id} value={ch.id}>{ch.label}</option>)}</optgroup>}
+        <option value="__custom">Custom chart (type your own numbers)…</option>
+      </select>
+      {c && (
+        <div className="chart-edit" style={{ marginTop: 6 }}>
+          <select aria-label="Chart type" value={c.type} onChange={(e) => setC({ type: e.target.value })}><option value="bar">Bar</option><option value="line">Line</option></select>
+          <input aria-label="Chart title" value={c.title} placeholder="Chart title" onChange={(e) => setC({ title: e.target.value })} />
+          <select aria-label="Unit" value={c.unit || ''} onChange={(e) => setC({ unit: e.target.value })}><option value="">number</option><option value="$">$</option><option value="%">%</option><option value="x">×</option><option value="mo">months</option><option value="/5">1–5 score</option></select>
+          <input className="wide" aria-label="Labels" value={(c.labels || []).join(', ')} placeholder="Labels, comma-separated" onChange={(e) => setC({ labels: e.target.value.split(',').map((s) => s.trim()) })} />
+          <input className="wide" aria-label="Values" value={(c.values || []).join(', ')} placeholder="Values, comma-separated (same count as labels)" onChange={(e) => setC({ values: e.target.value.split(',').map((s) => s.trim()) })} />
+          {!cleanChart(c) && <span className="too-long-note wide">Enter one number for each label.</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -292,6 +337,7 @@ function SlideEditor({ slide, charts, metrics, onError, patch, onMove, onDuplica
   const list = slide[L.list.key] || [];
   const setList = (next) => patch({ [L.list.key]: next });
   const sp = slide.spotlight || {};
+  const auto = slide.layout === 'summary' || slide.layout === 'timeline';
 
   return (
     <div className="slide-editor">
@@ -305,56 +351,40 @@ function SlideEditor({ slide, charts, metrics, onError, patch, onMove, onDuplica
         <button className="btn ghost small" onClick={onDelete}>{deleteArmed ? 'Click again to delete' : 'Delete'}</button>
         <label className={`verify ${slide.verified ? 'on' : ''}`}>
           <input type="checkbox" checked={!!slide.verified} onChange={(e) => patch({ verified: e.target.checked })} />
-          Verified against the CRM
+          {slide.fromAi && !slide.verified ? 'AI draft — mark verified' : 'Verified'}
         </label>
       </div>
-      {slide.hint && <p className="hint-box"><strong>This slide answers:</strong> {slide.hint}</p>}
 
       <div className="row">
         <label className="field"><span className="field-label">Section label</span>
-          <input id={`eyebrow-${slide.id}`} value={slide.eyebrow || ''} placeholder="e.g. Customer health" onChange={(e) => patch({ eyebrow: e.target.value })} />
+          <input id={`eyebrow-${slide.id}`} value={slide.eyebrow || ''} placeholder="e.g. Current state" onChange={(e) => patch({ eyebrow: e.target.value })} />
         </label>
-        <label className="field"><span className="field-label">Subtitle (period / basis)</span>
-          <input id={`subtitle-${slide.id}`} value={slide.subtitle || ''} placeholder="e.g. Jan–Sep 2026 actuals" onChange={(e) => patch({ subtitle: e.target.value })} />
+        <label className="field"><span className="field-label">Subtitle (optional)</span>
+          <input id={`subtitle-${slide.id}`} value={slide.subtitle || ''} onChange={(e) => patch({ subtitle: e.target.value })} />
         </label>
       </div>
       <label className="field"><span className="field-label">Headline — state the conclusion, not the topic</span>
-        <input id={`title-${slide.id}`} value={slide.title || ''} placeholder="e.g. The funnel is the problem, not the close" onChange={(e) => patch({ title: e.target.value })} />
+        <input id={`title-${slide.id}`} className={words(slide.title) < 5 || TOPIC_TITLE.test(String(slide.title).trim()) ? 'too-long' : ''} value={slide.title || ''} placeholder="e.g. Revenue will miss plan by 18% and runway is shorter than stated" onChange={(e) => patch({ title: e.target.value })} />
       </label>
 
-      {L.chart && (
-        <label className="field"><span className="field-label">Chart</span>
-          <select id={`chart-${slide.id}`} value={slide.chart || ''} onChange={(e) => patch({ chart: e.target.value })}>
-            <option value="">{slide.layout === 'chart' ? 'Choose a chart…' : 'No chart'}</option>
-            {charts.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-        </label>
-      )}
-
-      {L.chart2 && (
-        <label className="field"><span className="field-label">Second chart</span>
-          <select id={`chart2-${slide.id}`} value={slide.chart2 || ''} onChange={(e) => patch({ chart2: e.target.value })}>
-            <option value="">Choose a chart…</option>
-            {charts.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-        </label>
-      )}
+      {L.chart && <div className="field"><span className="field-label">Chart</span><ChartPicker id={`chart-${slide.id}`} value={slide.chart} charts={charts} emptyLabel={slide.layout === 'hero' ? 'Choose a chart…' : 'No chart'} onChange={(v) => patch({ chart: v })} /></div>}
+      {L.chart2 && <div className="field"><span className="field-label">Second chart</span><ChartPicker id={`chart2-${slide.id}`} value={slide.chart2} charts={charts} emptyLabel="Choose a chart…" onChange={(v) => patch({ chart2: v })} /></div>}
       {L.image && <ImagePicker label="Image" src={slide.image} onPick={(img) => patch({ image: img.src, imageW: img.w, imageH: img.h })} onClear={() => patch({ image: '', imageW: 0, imageH: 0 })} onError={onError} />}
 
       <div className="list-edit">
         <span className="field-label">{L.list.strings ? `${L.list.label}s` : L.label}</span>
+        {auto && <p className="hint-box">{slide.layout === 'summary' ? 'Tiles fill in automatically from the slides that follow (their headline and first number). Add a row only to override a tile.' : 'Rows fill in automatically from the project plan’s phases. Add rows only to override.'}</p>}
         {list.map((item, i) => (
           <div key={i} className={`list-item ${L.list.strings ? 'single' : ''}`}>
             {L.list.strings ? (
               <textarea id={`${L.list.key}-${slide.id}-${i}`} rows={slide.layout === 'narrative' ? 3 : 2} value={item} onChange={(e) => setList(list.map((x, j) => (j === i ? e.target.value : x)))} />
             ) : (
-              <div className={`item-fields n${L.list.fields.length}`}>
+              <div className="item-fields">
                 {L.list.fields.some((f) => f.k === 'value') && metrics.length > 0 && (
-                  <label className="field wide"><span className="field-hint">Insert a number from the CRM</span>
+                  <label className="field wide"><span className="field-hint">Insert a number from the answers</span>
                     <select id={`metric-${slide.id}-${i}`} value="" onChange={(e) => { const m = metrics.find((x) => x.id === e.target.value); if (m) setList(list.map((x, j) => (j === i ? applyMetric(slide.layout, x, m) : x))); }}>
-                      <option value="">Choose a metric… (fills the number and its source)</option>
-                      <optgroup label="Computed from the CRM">{metrics.filter((m) => !m.pinned).map((m) => <option key={m.id} value={m.id}>{m.label}: {m.value}</option>)}</optgroup>
-                      {metrics.some((m) => m.pinned) && <optgroup label="Your pinned evidence">{metrics.filter((m) => m.pinned).map((m) => <option key={m.id} value={m.id}>{m.label}: {m.full}</option>)}</optgroup>}
+                      <option value="">Choose an answer… (fills the number and its label)</option>
+                      {metrics.map((m) => <option key={m.id} value={m.id}>{m.label}: {m.value}</option>)}
                     </select>
                   </label>
                 )}
@@ -378,23 +408,15 @@ function SlideEditor({ slide, charts, metrics, onError, patch, onMove, onDuplica
           </div>
         ))}
         {list.length < L.list.max && (
-          <button className="btn ghost small" onClick={() => setList([...list, L.list.strings ? '' : { ...L.list.add }])}>+ Add {L.list.strings ? L.list.label.toLowerCase() : 'row'}</button>
+          <button className="btn ghost small" onClick={() => setList([...list, L.list.strings ? '' : { ...L.list.add }])}>+ Add {L.list.strings ? L.list.label.toLowerCase() : auto ? 'override row' : 'row'}</button>
         )}
       </div>
 
       {L.spotlight && (
         <div className="list-edit">
           <span className="field-label">Spotlight number</span>
-          <div className="item-fields n4">
-            {metrics.length > 0 && (
-              <label className="field wide"><span className="field-hint">Insert a number from the CRM</span>
-                <select id={`sp-metric-${slide.id}`} value="" onChange={(e) => { const m = metrics.find((x) => x.id === e.target.value); if (m) patch({ spotlight: { ...sp, label: m.label, value: m.value, caption: `Today · ${m.source}` } }); }}>
-                  <option value="">Choose a metric…</option>
-                  {metrics.map((m) => <option key={m.id} value={m.id}>{m.label}: {m.full || m.value}</option>)}
-                </select>
-              </label>
-            )}
-            {[['label', 'Label'], ['value', 'Big number'], ['caption', 'Caption'], ['text', 'Explanation (cite the file)']].map(([k, label]) => (
+          <div className="item-fields">
+            {[['label', 'Label'], ['value', 'Big number'], ['caption', 'Caption'], ['text', 'Explanation']].map(([k, label]) => (
               <label key={k} className={`field ${k === 'text' ? 'wide' : ''}`}><span className="field-hint">{label}</span>
                 {k === 'text'
                   ? <textarea id={`sp-${k}-${slide.id}`} rows={2} value={sp[k] || ''} onChange={(e) => patch({ spotlight: { ...sp, [k]: e.target.value } })} />
@@ -409,29 +431,33 @@ function SlideEditor({ slide, charts, metrics, onError, patch, onMove, onDuplica
           <textarea id={`ask-${slide.id}`} rows={2} value={slide.ask || ''} onChange={(e) => patch({ ask: e.target.value })} />
         </label>
       )}
+      {slide.layout === 'compare' && (
+        <div className="row">
+          <label className="field"><span className="field-label">Left column label</span><input value={slide.fromLabel || ''} placeholder="Today" onChange={(e) => patch({ fromLabel: e.target.value })} /></label>
+          <label className="field"><span className="field-label">Right column label</span><input value={slide.toLabel || ''} placeholder="Proposed" onChange={(e) => patch({ toLabel: e.target.value })} /></label>
+        </div>
+      )}
       {slide.layout === 'scorecard' && (
         <label className="field"><span className="field-label">Footnote (optional)</span>
           <input id={`foot-${slide.id}`} value={slide.footnote || ''} onChange={(e) => patch({ footnote: e.target.value })} />
         </label>
       )}
-
       {slide.layout !== 'narrative' && (
-        <label className="field"><span className="field-label">Board takeaway (one sentence, shown in the bar at the bottom)</span>
+        <label className="field"><span className="field-label">Takeaway (one sentence, shown in the bar at the bottom)</span>
           <input id={`takeaway-${slide.id}`} value={slide.takeaway || ''} onChange={(e) => patch({ takeaway: e.target.value })} />
         </label>
       )}
-      <label className="field"><span className="field-label">Speaker notes</span>
-        <textarea id={`notes-${slide.id}`} rows={2} value={slide.notes || ''} onChange={(e) => patch({ notes: e.target.value })} />
+      <label className="field"><span className="field-label">Speaker notes (exported to PowerPoint)</span>
+        <textarea id={`notes-${slide.id}`} rows={3} value={slide.notes || ''} onChange={(e) => patch({ notes: e.target.value })} />
       </label>
     </div>
   );
 }
 
 function applyMetric(layout, item, m) {
-  const next = { ...item, value: m.value, tone: m.tone === 'neutral' ? item.tone || 'neutral' : m.tone };
+  const next = { ...item, value: m.value };
   if (layout === 'bignumbers') return { ...next, label: m.label, sub: m.sub };
-  if (layout === 'hero' || layout === 'image') return { ...next, label: `${m.label} (${m.source})` };
-  if (layout === 'chart') return { ...next, label: m.label, delta: m.sub.split(' · ')[0] || '', note: m.source };
+  if (layout === 'chart') return { ...next, label: m.label, note: m.sub };
   if (layout === 'kpis') return { ...next, label: m.label, sub: m.sub };
   return { ...next, label: m.label };
 }
@@ -451,7 +477,6 @@ function ImagePicker({ label, src, onPick, onClear, onError }) {
           }} />
         </label>
         {src && <button className="btn ghost small" onClick={onClear}>Remove</button>}
-        <span className="muted small">PNG or JPG — a product screenshot, a customer photo, a logo.</span>
       </div>
     </div>
   );
