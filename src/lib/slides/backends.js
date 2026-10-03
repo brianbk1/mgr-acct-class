@@ -1,6 +1,6 @@
 // Backends that replay layout operations into a PDF (jsPDF) or a PowerPoint (pptxgenjs).
 import { layoutSlide, chartOps, PAGE, P } from './layouts.js';
-import { fmtUnit } from '../deckModel.js';
+import { fmtUnit } from '../deck.js';
 
 const PT = 72;
 
@@ -67,7 +67,7 @@ export async function buildPdf(deck, state) {
     if (i > 0) doc.addPage([PAGE.w * PT, PAGE.h * PT], 'landscape');
     pdfOps(doc, layoutSlide(s, deck, state, i + 1, total));
   });
-  doc.setProperties({ title: deck.title, subject: deck.subtitle || '', creator: 'The BK Consulting Group' });
+  doc.setProperties({ title: deck.title, subject: deck.subtitle || '', creator: 'Decision Loop' });
   return doc;
 }
 
@@ -120,7 +120,6 @@ function nativeChart(pres, slide, data, box) {
     valGridLine: { color: 'E3E8E5', size: 0.5 }, catGridLine: { style: 'none' }, showLegend: false,
   };
   const values = data.values.map((v) => (Number.isFinite(v) ? v : 0));
-  if (data.unit === '/5') Object.assign(opts, { valAxisMinVal: 0, valAxisMaxVal: 5, valAxisMajorUnit: 1, valAxisLabelFormatCode: '0', dataLabelFormatCode: '0"/5"' });
   if (data.type === 'bar') {
     const horiz = data.labels.length > 5;
     Object.assign(opts, { barDir: horiz ? 'bar' : 'col', showValue: data.labels.length <= 10, dataLabelFontSize: 9, dataLabelColor: P.ink, barGapWidthPct: 60 });
@@ -139,11 +138,10 @@ function nativeChart(pres, slide, data, box) {
 export async function buildPptx(deck, state, outputType = 'blob') {
   const { default: PptxGenJS } = await import('pptxgenjs');
   const pres = new PptxGenJS();
-  pres.defineLayout({ name: 'BKCG_WIDE', width: PAGE.w, height: PAGE.h });
-  pres.layout = 'BKCG_WIDE';
+  pres.defineLayout({ name: 'DL_WIDE', width: PAGE.w, height: PAGE.h });
+  pres.layout = 'DL_WIDE';
   pres.title = deck.title;
-  pres.company = deck.company || "";
-  pres.author = "The BK Consulting Group";
+  pres.company = deck.company || '';
   const total = deck.slides.length;
   deck.slides.forEach((s, i) => {
     const slide = pres.addSlide();
@@ -164,9 +162,9 @@ function downloadBlob(blob, filename) {
 const safeName = (t) => (t || 'presentation').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'presentation';
 
 export async function exportPptx(deck, state) {
-  downloadBlob(await buildPptx(deck, state, 'blob'), `${safeName(deck.fileStem || deck.title)}.pptx`);
+  downloadBlob(await buildPptx(deck, state, 'blob'), `${safeName(deck.title)}.pptx`);
 }
 export async function exportPdf(deck, state) {
   const doc = await buildPdf(deck, state);
-  downloadBlob(doc.output('blob'), `${safeName(deck.fileStem || deck.title)}.pdf`);
+  downloadBlob(doc.output('blob'), `${safeName(deck.title)}.pdf`);
 }

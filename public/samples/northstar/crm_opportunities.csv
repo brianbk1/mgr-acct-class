@@ -1,0 +1,221 @@
+﻿opportunity_id,opportunity_type,account_id,account_name,source,sales_rep,product,created_date,expected_close_date,stage,status,amount,discount_pct,probability,weighted_pipeline,days_in_stage,term_months,lost_reason,next_step
+O0001,Upsell,A024,Cedar Networks,Customer Expansion,Avery Chen,AI Coach,2026-01-24,2026-05-24,Closed Lost,Lost,17900.0,0.179,0.0,0.0,15,24,Poor fit,
+O0002,Upsell,A022,Blue Financial,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-07-01,2026-10-26,Closed Won,Won,22400.0,0.087,1.0,22400.0,5,12,,
+O0003,Upsell,A046,Clear Brands,Customer Expansion,Nina Patel,Northstar Core,2026-09-13,2026-11-05,Demo,Open,8500.0,0.081,0.3,2550.0,17,36,,Confirm use case
+O0004,Upsell,A034,Blue Holdings,Customer Expansion,Nina Patel,Analytics Pro,2026-04-25,2026-08-06,Closed Won,Won,5400.0,0.08,1.0,5400.0,22,12,,
+O0005,Renewal,A010,Clear Industries,Referral,Nina Patel,AI Coach,2026-08-27,2027-01-14,Proposal,Open,24400.0,0.04,0.55,13420.0,13,12,,Proposal follow-up
+O0006,Upsell,A059,Nova Collective,Customer Expansion,Nina Patel,Enterprise Bundle,2026-07-16,2026-11-06,Proposal,Open,4000.0,0.02,0.55,2200.0,5,24,,Proposal follow-up
+O0007,Renewal,A032,Cedar Manufacturing,Outbound SDR,Marcus Bell,Northstar Core,2026-03-30,2026-08-18,Closed Won,Won,23900.0,0.12,1.0,23900.0,11,24,,
+O0008,New,,Prospect 008,Inbound Content,Avery Chen,Analytics Pro,2026-02-05,2026-05-29,Discovery,Open,35000.0,0.075,0.15,5250.0,4,12,,Schedule demo
+O0009,Upsell,A034,Blue Holdings,Customer Expansion,Nina Patel,AI Coach,2026-07-16,2026-09-08,Proposal,Open,3600.0,0.104,0.55,1980.0,14,24,,Proposal follow-up
+O0010,New,,Prospect 010,Customer Expansion,Nina Patel,Enterprise Bundle,2026-08-05,2026-12-04,Closed Lost,Lost,65000.0,0,0.0,0.0,18,12,Lost to competitor,
+O0011,Upsell,A046,Clear Brands,Customer Expansion,Nina Patel,Analytics Pro,2026-06-30,2026-11-08,Negotiation,Open,8000.0,0.063,0.75,6000.0,23,12,,Executive review
+O0012,New,,Prospect 012,Inbound Content,Marcus Bell,Enterprise Bundle,2026-07-26,2026-10-21,Closed Won,Won,50000.0,0.126,1.0,50000.0,13,12,,
+O0013,New,,Prospect 013,Customer Expansion,Avery Chen,Enterprise Bundle,2026-02-13,2026-07-10,Closed Won,Won,8000.0,0.088,1.0,8000.0,13,24,,
+O0014,New,,Prospect 014,Inbound Content,Avery Chen,AI Coach,2026-01-19,2026-03-31,Closed Lost,Lost,20000.0,0,0.0,0.0,2,12,Price,
+O0015,New,,Prospect 015,Inbound Content,Marcus Bell,Northstar Core,2026-08-30,2026-11-26,Discovery,Open,50000.0,0.147,0.15,7500.0,22,36,,Schedule demo
+O0016,New,,Prospect 016,Conference,Nina Patel,Analytics Pro,2026-02-03,2026-04-20,Closed Lost,Lost,25000.0,0.132,0.0,0.0,7,24,Timing,
+O0017,New,,Prospect 017,Customer Expansion,Marcus Bell,Analytics Pro,2026-09-13,2026-12-19,Negotiation,Open,16000.0,0.126,0.75,12000.0,48,12,,Executive review
+O0018,New,,Prospect 018,Conference,Nina Patel,Enterprise Bundle,2026-04-18,2026-08-21,Closed Lost,Lost,8000.0,0,0.0,0.0,23,12,No budget,
+O0019,Upsell,A008,Atlas Works,Customer Expansion,Marcus Bell,AI Coach,2026-04-20,2026-07-06,Closed Lost,Lost,2000.0,0.138,0.0,0.0,24,36,No decision,
+O0020,New,,Prospect 020,Outbound SDR,Avery Chen,AI Coach,2026-04-18,2026-06-11,Closed Lost,Lost,50000.0,0.154,0.0,0.0,5,24,Timing,
+O0021,Upsell,A007,Clear Enterprises,Customer Expansion,Marcus Bell,Analytics Pro,2026-05-21,2026-07-06,Proposal,Open,3500.0,0.073,0.65,2275.0,43,12,,Proposal follow-up
+O0022,New,,Prospect 022,Outbound SDR,Marcus Bell,Analytics Pro,2026-06-02,2026-07-22,Proposal,Open,35000.0,0.201,0.65,22750.0,45,12,,Proposal follow-up
+O0023,Upsell,A034,Blue Holdings,Customer Expansion,Nina Patel,AI Coach,2026-04-22,2026-07-24,Closed Won,Won,5800.0,0.109,1.0,5800.0,3,12,,
+O0024,Upsell,A007,Clear Enterprises,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-08-17,2027-01-03,Demo,Open,2400.0,0.143,0.3,720.0,5,24,,Confirm use case
+O0025,New,,Prospect 025,Customer Expansion,Avery Chen,Analytics Pro,2026-05-25,2026-08-05,Closed Lost,Lost,8000.0,0,0.0,0.0,2,36,No decision,
+O0026,Upsell,A044,Ever Enterprises,Customer Expansion,Avery Chen,Enterprise Bundle,2026-06-26,2026-11-22,Closed Lost,Lost,2000.0,0.133,0.0,0.0,17,24,Timing,
+O0027,New,,Prospect 027,Inbound Content,Nina Patel,AI Coach,2026-08-06,2026-10-04,Proposal,Open,65000.0,0.057,0.55,35750.0,18,24,,Proposal follow-up
+O0028,New,,Prospect 028,Inbound Content,Avery Chen,Analytics Pro,2026-01-20,2026-05-03,Closed Lost,Lost,8000.0,0.178,0.0,0.0,8,24,Timing,
+O0029,Renewal,A001,Lighthouse Systems,Customer Expansion,Avery Chen,Enterprise Bundle,2026-03-01,2026-05-16,Closed Won,Won,28300.0,0.022,1.0,28300.0,16,12,,
+O0030,New,,Prospect 030,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-05-27,2026-09-11,Closed Lost,Lost,10000.0,0.114,0.0,0.0,22,24,Timing,
+O0031,Renewal,A004,Harbor Networks,Conference,Avery Chen,AI Coach,2026-01-15,2026-03-07,Closed Lost,Lost,10000.0,0.175,0.0,0.0,17,12,Price,
+O0032,New,,Prospect 032,Referral,Nina Patel,Enterprise Bundle,2026-03-22,2026-07-28,Closed Won,Won,10000.0,0.186,1.0,10000.0,18,12,,
+O0033,New,,Prospect 033,Outbound SDR,Avery Chen,Analytics Pro,2026-01-16,2026-03-25,Closed Lost,Lost,8000.0,0.062,0.0,0.0,17,12,Price,
+O0034,New,,Prospect 034,Conference,Nina Patel,Analytics Pro,2026-03-28,2026-06-11,Closed Won,Won,16000.0,0.09,1.0,16000.0,2,12,,
+O0035,New,,Prospect 035,Outbound SDR,Nina Patel,AI Coach,2026-05-22,2026-10-08,Closed Lost,Lost,16000.0,0.138,0.0,0.0,15,12,Price,
+O0036,New,,Prospect 036,Inbound Content,Nina Patel,Analytics Pro,2026-06-04,2026-09-16,Closed Lost,Lost,25000.0,0.11,0.0,0.0,18,12,Price,
+O0037,New,,Prospect 037,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-08-10,2026-12-30,Proposal,Open,25000.0,0.128,0.65,16250.0,68,36,,Proposal follow-up
+O0038,New,,Prospect 038,Outbound SDR,Nina Patel,AI Coach,2026-07-31,2026-11-01,Discovery,Open,16000.0,0.196,0.15,2400.0,23,12,,Schedule demo
+O0039,New,,Prospect 039,Outbound SDR,Nina Patel,Enterprise Bundle,2026-06-15,2026-10-22,Closed Lost,Lost,20000.0,0.158,0.0,0.0,5,36,No decision,
+O0040,Renewal,A019,Silver Industries,Conference,Nina Patel,AI Coach,2026-04-04,2026-06-08,Closed Won,Won,69500.0,0.07,1.0,69500.0,16,36,,
+O0041,New,,Prospect 041,Customer Expansion,Avery Chen,Northstar Core,2026-01-08,2026-03-29,Closed Lost,Lost,35000.0,0.142,0.0,0.0,4,12,No decision,
+O0042,New,,Prospect 042,Customer Expansion,Marcus Bell,AI Coach,2026-04-24,2026-06-18,Closed Lost,Lost,12000.0,0.051,0.0,0.0,11,36,Timing,
+O0043,Upsell,A053,Summit Technologies,Customer Expansion,Nina Patel,Enterprise Bundle,2026-09-12,2026-12-26,Closed Lost,Lost,11600.0,0.042,0.0,0.0,23,12,Lost to competitor,
+O0044,Upsell,A028,Atlas Financial,Customer Expansion,Avery Chen,AI Coach,2026-07-29,2026-11-10,Discovery,Open,18100.0,0.079,0.15,2715.0,4,12,,Schedule demo
+O0045,Renewal,A049,Pioneer Technologies,Referral,Nina Patel,Enterprise Bundle,2026-09-19,2026-11-08,Proposal,Open,33100.0,0.141,0.55,18205.0,9,12,,Proposal follow-up
+O0046,New,,Prospect 046,Partner,Avery Chen,Analytics Pro,2026-09-30,2027-02-14,Negotiation,Open,25000.0,0.131,0.75,18750.0,16,24,,Executive review
+O0047,New,,Prospect 047,Outbound SDR,Avery Chen,Enterprise Bundle,2026-04-10,2026-09-03,Closed Lost,Lost,20000.0,0.158,0.0,0.0,19,12,No budget,
+O0048,New,,Prospect 048,Customer Expansion,Nina Patel,AI Coach,2026-08-29,2026-10-23,Negotiation,Open,65000.0,0.046,0.75,48750.0,7,24,,Executive review
+O0049,Upsell,A041,Silver Collective,Customer Expansion,Avery Chen,Analytics Pro,2026-05-28,2026-07-28,Closed Won,Won,12200.0,0.089,1.0,12200.0,7,12,,
+O0050,New,,Prospect 050,Inbound Content,Marcus Bell,Enterprise Bundle,2026-04-02,2026-05-23,Closed Lost,Lost,35000.0,0.051,0.0,0.0,18,24,Price,
+O0051,New,,Prospect 051,Customer Expansion,Avery Chen,Analytics Pro,2026-08-08,2026-11-12,Closed Won,Won,25000.0,0.098,1.0,25000.0,5,36,,
+O0052,Upsell,A013,Redwood Health,Customer Expansion,Avery Chen,Northstar Core,2026-08-02,2026-09-19,Discovery,Open,11700.0,0.077,0.15,1755.0,25,12,,Schedule demo
+O0053,Upsell,A024,Cedar Networks,Customer Expansion,Avery Chen,AI Coach,2026-05-08,2026-08-15,Closed Won,Won,15000.0,0.03,1.0,15000.0,13,36,,
+O0054,New,,Prospect 054,Customer Expansion,Nina Patel,AI Coach,2026-01-31,2026-05-04,Closed Won,Won,10000.0,0.083,1.0,10000.0,14,12,,
+O0055,New,,Prospect 055,Customer Expansion,Nina Patel,Northstar Core,2026-04-21,2026-06-02,Closed Won,Won,35000.0,0.047,1.0,35000.0,8,12,,
+O0056,Renewal,A031,River Solutions,Outbound SDR,Nina Patel,Enterprise Bundle,2026-03-07,2026-06-08,Discovery,Open,18800.0,0.103,0.15,2820.0,12,12,,Schedule demo
+O0057,New,,Prospect 057,Partner,Marcus Bell,Northstar Core,2026-07-19,2026-11-29,Closed Lost,Lost,12000.0,0.084,0.0,0.0,4,12,Price,
+O0058,Renewal,A029,Cedar Financial,Referral,Marcus Bell,Northstar Core,2026-03-17,2026-06-29,Closed Lost,Lost,65600.0,0.207,0.0,0.0,18,12,Timing,
+O0059,New,,Prospect 059,Outbound SDR,Nina Patel,Analytics Pro,2026-02-05,2026-03-13,Closed Lost,Lost,8000.0,0.242,0.0,0.0,24,24,No decision,
+O0060,New,,Prospect 060,Inbound Content,Marcus Bell,Northstar Core,2026-09-28,2026-11-12,Demo,Open,65000.0,0.116,0.3,19500.0,5,36,,Confirm use case
+O0061,New,,Prospect 061,Outbound SDR,Marcus Bell,Analytics Pro,2026-06-18,2026-09-26,Demo,Open,16000.0,0.195,0.3,4800.0,9,12,,Confirm use case
+O0062,New,,Prospect 062,Customer Expansion,Avery Chen,Analytics Pro,2026-03-17,2026-06-04,Closed Lost,Lost,35000.0,0.164,0.0,0.0,23,36,No budget,
+O0063,New,,Prospect 063,Outbound SDR,Avery Chen,Northstar Core,2026-06-10,2026-07-29,Closed Won,Won,35000.0,0.217,1.0,35000.0,11,12,,
+O0064,New,,Prospect 064,Conference,Marcus Bell,Enterprise Bundle,2026-02-14,2026-04-16,Closed Won,Won,65000.0,0.223,1.0,65000.0,25,12,,
+O0065,New,,Prospect 065,Referral,Avery Chen,Enterprise Bundle,2026-02-13,2026-04-12,Proposal,Open,65000.0,0.089,0.55,35750.0,2,12,,Proposal follow-up
+O0066,New,,Prospect 066,Conference,Marcus Bell,Analytics Pro,2026-08-02,2026-12-16,Discovery,Open,65000.0,0.134,0.15,9750.0,12,24,,Schedule demo
+O0067,Renewal,A022,Blue Financial,Inbound Content,Avery Chen,Analytics Pro,2026-09-30,2026-11-07,Demo,Open,40700.0,0.073,0.3,12210.0,7,24,,Confirm use case
+O0068,Renewal,A045,Ever Labs,Referral,Avery Chen,AI Coach,2026-07-31,2026-09-08,Closed Won,Won,9300.0,0.099,1.0,9300.0,19,36,,
+O0069,Upsell,A040,Pioneer Labs,Customer Expansion,Avery Chen,AI Coach,2026-04-10,2026-07-17,Closed Lost,Lost,6100.0,0.012,0.0,0.0,12,12,No decision,
+O0070,New,,Prospect 070,Inbound Content,Nina Patel,Enterprise Bundle,2026-08-11,2026-10-11,Discovery,Open,16000.0,0.082,0.15,2400.0,14,12,,Schedule demo
+O0071,Upsell,A005,Stone Partners,Customer Expansion,Avery Chen,Northstar Core,2026-03-01,2026-07-01,Closed Won,Won,6100.0,0.03,1.0,6100.0,6,36,,
+O0072,New,,Prospect 072,Inbound Content,Marcus Bell,Analytics Pro,2026-03-05,2026-05-05,Discovery,Open,25000.0,0.137,0.15,3750.0,2,12,,Schedule demo
+O0073,Renewal,A012,Redwood Group,Outbound SDR,Marcus Bell,AI Coach,2026-07-28,2026-11-06,Closed Won,Won,27200.0,0.2,1.0,27200.0,3,12,,
+O0074,New,,Prospect 074,Referral,Avery Chen,Enterprise Bundle,2026-01-11,2026-04-16,Closed Lost,Lost,16000.0,0.043,0.0,0.0,24,24,Price,
+O0075,New,,Prospect 075,Inbound Content,Nina Patel,Analytics Pro,2026-07-25,2026-12-12,Discovery,Open,16000.0,0.134,0.15,2400.0,8,24,,Schedule demo
+O0076,New,,Prospect 076,Conference,Avery Chen,AI Coach,2026-02-23,2026-06-27,Proposal,Open,12000.0,0.063,0.55,6600.0,7,12,,Proposal follow-up
+O0077,Upsell,A050,Blue Solutions,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-03-30,2026-08-27,Closed Won,Won,12700.0,0.035,1.0,12700.0,23,12,,
+O0078,New,,Prospect 078,Outbound SDR,Avery Chen,Analytics Pro,2026-02-09,2026-05-11,Closed Lost,Lost,35000.0,0.215,0.0,0.0,6,36,No decision,
+O0079,New,,Prospect 079,Customer Expansion,Marcus Bell,AI Coach,2026-08-06,2026-10-28,Negotiation,Open,8000.0,0.129,0.75,6000.0,44,36,,Executive review
+O0080,New,,Prospect 080,Inbound Content,Marcus Bell,Enterprise Bundle,2026-01-03,2026-02-13,Closed Lost,Lost,35000.0,0.035,0.0,0.0,14,12,No budget,
+O0081,Upsell,A054,North Holdings,Customer Expansion,Marcus Bell,Analytics Pro,2026-02-08,2026-07-07,Closed Won,Won,8500.0,0.048,1.0,8500.0,13,12,,
+O0082,Renewal,A036,Atlas Industries,Conference,Nina Patel,AI Coach,2026-07-16,2026-11-20,Closed Won,Won,11700.0,0.003,1.0,11700.0,18,36,,
+O0083,Renewal,A059,Nova Collective,Inbound Content,Marcus Bell,Northstar Core,2026-09-11,2026-12-25,Demo,Open,8000.0,0.041,0.3,2400.0,6,12,,Confirm use case
+O0084,New,,Prospect 084,Referral,Marcus Bell,AI Coach,2026-01-19,2026-05-07,Closed Lost,Lost,12000.0,0.143,0.0,0.0,17,12,Lost to competitor,
+O0085,New,,Prospect 085,Referral,Avery Chen,Analytics Pro,2026-06-09,2026-11-06,Discovery,Open,50000.0,0.124,0.15,7500.0,22,12,,Schedule demo
+O0086,New,,Prospect 086,Customer Expansion,Avery Chen,Enterprise Bundle,2026-03-22,2026-08-04,Closed Lost,Lost,8000.0,0.118,0.0,0.0,6,24,No decision,
+O0087,New,,Prospect 087,Conference,Nina Patel,Analytics Pro,2026-09-22,2027-02-14,Closed Lost,Lost,35000.0,0,0.0,0.0,24,12,Lost to competitor,
+O0088,New,,Prospect 088,Outbound SDR,Nina Patel,AI Coach,2026-08-06,2026-11-15,Proposal,Open,8000.0,0.214,0.55,4400.0,14,36,,Proposal follow-up
+O0089,New,,Prospect 089,Referral,Marcus Bell,Enterprise Bundle,2026-07-30,2026-12-13,Proposal,Open,20000.0,0.171,0.65,13000.0,52,12,,Proposal follow-up
+O0090,Renewal,A034,Blue Holdings,Conference,Marcus Bell,Enterprise Bundle,2026-05-16,2026-06-29,Closed Won,Won,14100.0,0.253,1.0,14100.0,9,24,,
+O0091,Renewal,A033,Atlas Foods,Referral,Nina Patel,Northstar Core,2026-06-16,2026-07-23,Demo,Open,27900.0,0.073,0.3,8370.0,7,12,,Confirm use case
+O0092,Upsell,A011,Summit Brands,Customer Expansion,Marcus Bell,AI Coach,2026-05-16,2026-09-06,Closed Lost,Lost,13900.0,0.225,0.0,0.0,25,36,Timing,
+O0093,New,,Prospect 093,Inbound Content,Avery Chen,Enterprise Bundle,2026-05-11,2026-09-19,Closed Lost,Lost,35000.0,0.03,0.0,0.0,20,24,No budget,
+O0094,Renewal,A049,Pioneer Technologies,Inbound Content,Nina Patel,Enterprise Bundle,2026-04-02,2026-06-01,Closed Won,Won,32000.0,0.074,1.0,32000.0,12,24,,
+O0095,New,,Prospect 095,Inbound Content,Nina Patel,AI Coach,2026-08-15,2026-10-09,Negotiation,Open,20000.0,0,0.75,15000.0,3,12,,Executive review
+O0096,New,,Prospect 096,Partner,Avery Chen,AI Coach,2026-08-27,2026-10-29,Closed Won,Won,10000.0,0.168,1.0,10000.0,25,24,,
+O0097,New,,Prospect 097,Referral,Marcus Bell,Analytics Pro,2026-03-01,2026-05-19,Closed Lost,Lost,12000.0,0.108,0.0,0.0,25,12,No budget,
+O0098,Renewal,A034,Blue Holdings,Conference,Marcus Bell,AI Coach,2026-04-01,2026-05-15,Closed Won,Won,13600.0,0.105,1.0,13600.0,4,36,,
+O0099,New,,Prospect 099,Customer Expansion,Avery Chen,Enterprise Bundle,2026-08-15,2026-12-23,Proposal,Open,10000.0,0.075,0.55,5500.0,13,24,,Proposal follow-up
+O0100,New,,Prospect 100,Referral,Nina Patel,Analytics Pro,2026-03-28,2026-05-25,Closed Lost,Lost,20000.0,0.07,0.0,0.0,22,12,Lost to competitor,
+O0101,New,,Prospect 101,Conference,Marcus Bell,Northstar Core,2026-03-22,2026-07-01,Closed Lost,Lost,20000.0,0.122,0.0,0.0,25,12,Timing,
+O0102,New,,Prospect 102,Conference,Nina Patel,AI Coach,2026-02-18,2026-06-05,Closed Lost,Lost,65000.0,0.058,0.0,0.0,23,12,No decision,
+O0103,Renewal,A034,Blue Holdings,Inbound Content,Avery Chen,Enterprise Bundle,2026-03-05,2026-04-17,Closed Won,Won,13300.0,0.179,1.0,13300.0,13,24,,
+O0104,Renewal,A028,Atlas Financial,Customer Expansion,Marcus Bell,Analytics Pro,2026-06-17,2026-10-29,Proposal,Open,62800.0,0.253,0.65,40820.0,48,36,,Proposal follow-up
+O0105,New,,Prospect 105,Customer Expansion,Nina Patel,Analytics Pro,2026-07-07,2026-11-09,Discovery,Open,50000.0,0.023,0.15,7500.0,8,12,,Schedule demo
+O0106,New,,Prospect 106,Outbound SDR,Marcus Bell,Analytics Pro,2026-04-27,2026-07-20,Negotiation,Open,25000.0,0.198,0.75,18750.0,44,12,,Executive review
+O0107,New,,Prospect 107,Outbound SDR,Avery Chen,Northstar Core,2026-02-08,2026-03-15,Closed Lost,Lost,16000.0,0.176,0.0,0.0,18,12,No decision,
+O0108,New,,Prospect 108,Referral,Marcus Bell,Northstar Core,2026-02-17,2026-05-15,Closed Lost,Lost,8000.0,0.085,0.0,0.0,6,36,Timing,
+O0109,New,,Prospect 109,Inbound Content,Marcus Bell,AI Coach,2026-06-28,2026-10-22,Proposal,Open,20000.0,0.035,0.65,13000.0,50,12,,Proposal follow-up
+O0110,Renewal,A004,Harbor Networks,Customer Expansion,Marcus Bell,Northstar Core,2026-03-28,2026-05-28,Closed Won,Won,10300.0,0.129,1.0,10300.0,5,36,,
+O0111,New,,Prospect 111,Inbound Content,Nina Patel,Enterprise Bundle,2026-02-21,2026-07-18,Closed Lost,Lost,16000.0,0.07,0.0,0.0,2,12,Poor fit,
+O0112,New,,Prospect 112,Partner,Marcus Bell,Analytics Pro,2026-06-12,2026-08-26,Discovery,Open,12000.0,0.074,0.15,1800.0,16,12,,Schedule demo
+O0113,Upsell,A020,Clear Holdings,Customer Expansion,Avery Chen,Northstar Core,2026-07-19,2026-08-31,Closed Won,Won,6200.0,0.059,1.0,6200.0,18,12,,
+O0114,Renewal,A053,Summit Technologies,Outbound SDR,Nina Patel,Enterprise Bundle,2026-02-08,2026-06-13,Closed Won,Won,42400.0,0.194,1.0,42400.0,22,12,,
+O0115,New,,Prospect 115,Outbound SDR,Nina Patel,Analytics Pro,2026-04-18,2026-06-01,Discovery,Open,16000.0,0.203,0.15,2400.0,13,12,,Schedule demo
+O0116,New,,Prospect 116,Referral,Avery Chen,Analytics Pro,2026-05-28,2026-07-26,Demo,Open,16000.0,0.101,0.3,4800.0,11,12,,Confirm use case
+O0117,New,,Prospect 117,Customer Expansion,Avery Chen,Analytics Pro,2026-03-20,2026-08-10,Closed Lost,Lost,12000.0,0.128,0.0,0.0,6,24,Timing,
+O0118,New,,Prospect 118,Inbound Content,Marcus Bell,AI Coach,2026-05-08,2026-07-05,Closed Lost,Lost,12000.0,0.181,0.0,0.0,6,36,Price,
+O0119,Renewal,A056,Bright Works,Outbound SDR,Avery Chen,AI Coach,2026-08-29,2027-01-19,Negotiation,Open,47500.0,0.097,0.75,35625.0,2,24,,Executive review
+O0120,Upsell,A016,Ever Manufacturing,Customer Expansion,Marcus Bell,Analytics Pro,2026-06-15,2026-11-11,Closed Lost,Lost,10200.0,0.099,0.0,0.0,13,24,Lost to competitor,
+O0121,Upsell,A007,Clear Enterprises,Customer Expansion,Nina Patel,Northstar Core,2026-07-25,2026-09-07,Closed Won,Won,2800.0,0.066,1.0,2800.0,14,24,,
+O0122,Renewal,A002,Atlas Manufacturing,Inbound Content,Nina Patel,AI Coach,2026-07-19,2026-09-28,Negotiation,Open,9300.0,0,0.75,6975.0,6,12,,Executive review
+O0123,Upsell,A012,Redwood Group,Customer Expansion,Avery Chen,AI Coach,2026-04-05,2026-06-03,Closed Lost,Lost,4800.0,0.152,0.0,0.0,13,12,Price,
+O0124,New,,Prospect 124,Customer Expansion,Avery Chen,Analytics Pro,2026-09-20,2026-12-05,Discovery,Open,8000.0,0.011,0.15,1200.0,13,12,,Schedule demo
+O0125,New,,Prospect 125,Outbound SDR,Marcus Bell,Northstar Core,2026-02-23,2026-07-04,Closed Lost,Lost,12000.0,0.239,0.0,0.0,9,12,Lost to competitor,
+O0126,New,,Prospect 126,Inbound Content,Nina Patel,AI Coach,2026-01-03,2026-04-13,Negotiation,Open,35000.0,0.032,0.75,26250.0,4,12,,Executive review
+O0127,New,,Prospect 127,Outbound SDR,Marcus Bell,AI Coach,2026-01-23,2026-03-18,Demo,Open,10000.0,0.035,0.3,3000.0,24,36,,Confirm use case
+O0128,New,,Prospect 128,Inbound Content,Nina Patel,Analytics Pro,2026-07-10,2026-10-20,Demo,Open,25000.0,0.021,0.3,7500.0,20,36,,Confirm use case
+O0129,New,,Prospect 129,Referral,Nina Patel,Analytics Pro,2026-03-28,2026-06-16,Closed Won,Won,25000.0,0.125,1.0,25000.0,21,36,,
+O0130,Upsell,A023,Peak Networks,Customer Expansion,Nina Patel,Analytics Pro,2026-04-28,2026-08-23,Closed Lost,Lost,5700.0,0.016,0.0,0.0,9,36,Lost to competitor,
+O0131,New,,Prospect 131,Conference,Nina Patel,AI Coach,2026-09-09,2026-12-07,Demo,Open,20000.0,0.068,0.3,6000.0,11,12,,Confirm use case
+O0132,Upsell,A047,Harbor Health,Customer Expansion,Avery Chen,AI Coach,2026-08-12,2026-12-02,Negotiation,Open,4000.0,0.1,0.75,3000.0,4,24,,Executive review
+O0133,New,,Prospect 133,Referral,Marcus Bell,Analytics Pro,2026-02-09,2026-06-17,Closed Won,Won,35000.0,0.124,1.0,35000.0,22,12,,
+O0134,New,,Prospect 134,Inbound Content,Nina Patel,Northstar Core,2026-06-08,2026-08-01,Closed Lost,Lost,12000.0,0.121,0.0,0.0,24,36,Lost to competitor,
+O0135,New,,Prospect 135,Inbound Content,Avery Chen,Northstar Core,2026-01-17,2026-03-03,Closed Won,Won,8000.0,0.147,1.0,8000.0,5,12,,
+O0136,New,,Prospect 136,Conference,Avery Chen,Enterprise Bundle,2026-02-02,2026-04-10,Closed Lost,Lost,50000.0,0.069,0.0,0.0,15,36,No budget,
+O0137,New,,Prospect 137,Outbound SDR,Marcus Bell,AI Coach,2026-06-10,2026-08-01,Closed Lost,Lost,12000.0,0.077,0.0,0.0,9,36,Timing,
+O0138,New,,Prospect 138,Inbound Content,Marcus Bell,Enterprise Bundle,2026-01-11,2026-03-23,Closed Lost,Lost,35000.0,0.066,0.0,0.0,14,12,Lost to competitor,
+O0139,New,,Prospect 139,Referral,Avery Chen,AI Coach,2026-06-29,2026-11-03,Closed Won,Won,12000.0,0.115,1.0,12000.0,21,12,,
+O0140,New,,Prospect 140,Inbound Content,Marcus Bell,Northstar Core,2026-03-30,2026-06-05,Closed Lost,Lost,35000.0,0.142,0.0,0.0,10,24,No budget,
+O0141,Renewal,A001,Lighthouse Systems,Referral,Avery Chen,AI Coach,2026-02-01,2026-05-28,Discovery,Open,28800.0,0.014,0.15,4320.0,18,12,,Schedule demo
+O0142,New,,Prospect 142,Inbound Content,Nina Patel,Analytics Pro,2026-03-25,2026-06-06,Closed Won,Won,10000.0,0.086,1.0,10000.0,2,12,,
+O0143,New,,Prospect 143,Inbound Content,Nina Patel,Northstar Core,2026-05-20,2026-10-06,Closed Lost,Lost,16000.0,0.176,0.0,0.0,3,12,No budget,
+O0144,Upsell,A015,Atlas Hospitality,Customer Expansion,Avery Chen,Analytics Pro,2026-07-30,2026-10-20,Closed Lost,Lost,2700.0,0.053,0.0,0.0,12,12,Poor fit,
+O0145,New,,Prospect 145,Inbound Content,Nina Patel,Enterprise Bundle,2026-08-15,2026-10-01,Demo,Open,25000.0,0.069,0.3,7500.0,25,36,,Confirm use case
+O0146,New,,Prospect 146,Conference,Nina Patel,Enterprise Bundle,2026-04-14,2026-06-29,Closed Lost,Lost,25000.0,0.09,0.0,0.0,15,24,Price,
+O0147,New,,Prospect 147,Partner,Marcus Bell,AI Coach,2026-01-12,2026-04-13,Proposal,Open,25000.0,0.065,0.65,16250.0,58,12,,Proposal follow-up
+O0148,Upsell,A058,Cobalt Group,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-08-15,2026-09-19,Closed Lost,Lost,5500.0,0.16,0.0,0.0,17,24,Price,
+O0149,Upsell,A005,Stone Partners,Customer Expansion,Avery Chen,Analytics Pro,2026-06-09,2026-10-24,Closed Won,Won,7900.0,0.08,1.0,7900.0,16,12,,
+O0150,New,,Prospect 150,Inbound Content,Marcus Bell,Enterprise Bundle,2026-09-11,2026-12-30,Proposal,Open,50000.0,0.162,0.65,32500.0,34,12,,Proposal follow-up
+O0151,Renewal,A057,Clear Services,Inbound Content,Avery Chen,Northstar Core,2026-02-19,2026-05-12,Closed Lost,Lost,9000.0,0,0.0,0.0,7,12,Poor fit,
+O0152,New,,Prospect 152,Conference,Avery Chen,Analytics Pro,2026-03-04,2026-05-05,Proposal,Open,10000.0,0.027,0.55,5500.0,12,24,,Proposal follow-up
+O0153,New,,Prospect 153,Referral,Avery Chen,Analytics Pro,2026-02-18,2026-05-05,Closed Won,Won,20000.0,0.01,1.0,20000.0,23,12,,
+O0154,New,,Prospect 154,Referral,Marcus Bell,AI Coach,2026-01-01,2026-02-12,Closed Lost,Lost,20000.0,0.041,0.0,0.0,2,36,No budget,
+O0155,Upsell,A032,Cedar Manufacturing,Customer Expansion,Marcus Bell,AI Coach,2026-05-28,2026-07-02,Closed Lost,Lost,7800.0,0.096,0.0,0.0,9,12,Price,
+O0156,New,,Prospect 156,Conference,Avery Chen,Northstar Core,2026-02-24,2026-06-17,Closed Lost,Lost,12000.0,0.089,0.0,0.0,5,12,No budget,
+O0157,New,,Prospect 157,Customer Expansion,Avery Chen,Northstar Core,2026-04-14,2026-08-08,Closed Won,Won,10000.0,0.025,1.0,10000.0,22,12,,
+O0158,New,,Prospect 158,Customer Expansion,Avery Chen,Northstar Core,2026-01-30,2026-06-27,Closed Lost,Lost,20000.0,0,0.0,0.0,22,36,No budget,
+O0159,New,,Prospect 159,Customer Expansion,Nina Patel,Northstar Core,2026-01-06,2026-05-17,Closed Won,Won,50000.0,0.086,1.0,50000.0,3,36,,
+O0160,New,,Prospect 160,Conference,Nina Patel,Analytics Pro,2026-03-27,2026-07-21,Closed Lost,Lost,12000.0,0.04,0.0,0.0,18,12,No budget,
+O0161,New,,Prospect 161,Referral,Avery Chen,Northstar Core,2026-02-02,2026-03-16,Discovery,Open,16000.0,0.038,0.15,2400.0,10,12,,Schedule demo
+O0162,New,,Prospect 162,Conference,Avery Chen,AI Coach,2026-03-24,2026-05-14,Closed Lost,Lost,35000.0,0.098,0.0,0.0,14,12,No budget,
+O0163,Upsell,A059,Nova Collective,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-06-29,2026-09-14,Closed Won,Won,4200.0,0.035,1.0,4200.0,12,36,,
+O0164,New,,Prospect 164,Conference,Marcus Bell,AI Coach,2026-07-12,2026-12-03,Demo,Open,35000.0,0.039,0.3,10500.0,22,12,,Confirm use case
+O0165,New,,Prospect 165,Customer Expansion,Avery Chen,Enterprise Bundle,2026-02-10,2026-05-29,Closed Lost,Lost,8000.0,0.031,0.0,0.0,5,36,No decision,
+O0166,New,,Prospect 166,Outbound SDR,Avery Chen,Northstar Core,2026-01-01,2026-04-09,Closed Won,Won,8000.0,0.067,1.0,8000.0,14,12,,
+O0167,Upsell,A055,Blue Labs,Customer Expansion,Nina Patel,Analytics Pro,2026-01-30,2026-05-29,Closed Lost,Lost,2200.0,0,0.0,0.0,13,12,No budget,
+O0168,Upsell,A045,Ever Labs,Customer Expansion,Avery Chen,AI Coach,2026-03-11,2026-05-05,Closed Won,Won,4400.0,0,1.0,4400.0,4,12,,
+O0169,New,,Prospect 169,Outbound SDR,Nina Patel,Enterprise Bundle,2026-02-12,2026-03-23,Closed Lost,Lost,25000.0,0.028,0.0,0.0,5,36,Poor fit,
+O0170,Renewal,A055,Blue Labs,Outbound SDR,Marcus Bell,Enterprise Bundle,2026-08-23,2026-11-15,Proposal,Open,5800.0,0.263,0.65,3770.0,43,24,,Proposal follow-up
+O0171,New,,Prospect 171,Conference,Marcus Bell,AI Coach,2026-02-19,2026-07-17,Closed Lost,Lost,10000.0,0.133,0.0,0.0,9,12,No budget,
+O0172,Renewal,A037,Blue Logistics,Outbound SDR,Marcus Bell,Northstar Core,2026-03-05,2026-04-28,Closed Won,Won,76300.0,0.167,1.0,76300.0,16,12,,
+O0173,New,,Prospect 173,Inbound Content,Avery Chen,Analytics Pro,2026-07-04,2026-10-29,Demo,Open,35000.0,0.123,0.3,10500.0,8,12,,Confirm use case
+O0174,New,,Prospect 174,Inbound Content,Marcus Bell,Northstar Core,2026-09-02,2027-01-07,Discovery,Open,10000.0,0.035,0.15,1500.0,21,12,,Schedule demo
+O0175,Renewal,A021,Iron Enterprises,Outbound SDR,Marcus Bell,Enterprise Bundle,2026-09-27,2027-02-24,Discovery,Open,53800.0,0.196,0.15,8070.0,16,36,,Schedule demo
+O0176,New,,Prospect 176,Customer Expansion,Marcus Bell,Northstar Core,2026-02-12,2026-05-08,Closed Won,Won,16000.0,0.043,1.0,16000.0,25,36,,
+O0177,New,,Prospect 177,Outbound SDR,Marcus Bell,Enterprise Bundle,2026-08-11,2026-09-19,Negotiation,Open,35000.0,0.163,0.75,26250.0,54,12,,Executive review
+O0178,New,,Prospect 178,Referral,Avery Chen,Northstar Core,2026-09-27,2026-12-09,Proposal,Open,12000.0,0.069,0.55,6600.0,14,24,,Proposal follow-up
+O0179,New,,Prospect 179,Inbound Content,Nina Patel,Northstar Core,2026-04-05,2026-06-13,Closed Won,Won,16000.0,0.023,1.0,16000.0,8,12,,
+O0180,Upsell,A007,Clear Enterprises,Customer Expansion,Nina Patel,AI Coach,2026-07-01,2026-11-21,Demo,Open,2300.0,0.113,0.3,690.0,16,12,,Confirm use case
+O0181,Upsell,A032,Cedar Manufacturing,Customer Expansion,Marcus Bell,AI Coach,2026-01-03,2026-02-24,Closed Lost,Lost,9600.0,0.166,0.0,0.0,6,12,Price,
+O0182,Upsell,A043,Peak Manufacturing,Customer Expansion,Avery Chen,AI Coach,2026-02-19,2026-06-12,Closed Won,Won,19600.0,0.021,1.0,19600.0,18,12,,
+O0183,New,,Prospect 183,Customer Expansion,Marcus Bell,AI Coach,2026-01-18,2026-05-20,Closed Won,Won,8000.0,0.133,1.0,8000.0,14,12,,
+O0184,New,,Prospect 184,Partner,Nina Patel,Enterprise Bundle,2026-01-01,2026-05-04,Closed Lost,Lost,50000.0,0.096,0.0,0.0,3,12,No decision,
+O0185,Upsell,A060,Redwood Hospitality,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-07-13,2026-08-29,Closed Lost,Lost,2700.0,0.107,0.0,0.0,3,12,Timing,
+O0186,Upsell,A003,Clear Manufacturing,Customer Expansion,Nina Patel,Enterprise Bundle,2026-02-28,2026-05-02,Closed Lost,Lost,4800.0,0.042,0.0,0.0,9,12,Poor fit,
+O0187,Upsell,A052,Cobalt Financial,Customer Expansion,Marcus Bell,AI Coach,2026-04-26,2026-08-12,Closed Won,Won,5400.0,0.129,1.0,5400.0,16,12,,
+O0188,Renewal,A042,Cobalt Enterprises,Inbound Content,Avery Chen,Analytics Pro,2026-01-30,2026-03-12,Closed Won,Won,54300.0,0.089,1.0,54300.0,16,12,,
+O0189,New,,Prospect 189,Inbound Content,Marcus Bell,AI Coach,2026-01-16,2026-06-13,Closed Won,Won,8000.0,0.207,1.0,8000.0,20,12,,
+O0190,New,,Prospect 190,Customer Expansion,Marcus Bell,AI Coach,2026-01-23,2026-05-24,Closed Lost,Lost,65000.0,0.147,0.0,0.0,23,12,No budget,
+O0191,Upsell,A012,Redwood Group,Customer Expansion,Nina Patel,Northstar Core,2026-06-15,2026-09-28,Demo,Open,4800.0,0.114,0.3,1440.0,6,12,,Confirm use case
+O0192,New,,Prospect 192,Partner,Marcus Bell,Analytics Pro,2026-06-26,2026-08-22,Closed Lost,Lost,65000.0,0.14,0.0,0.0,8,24,No decision,
+O0193,New,,Prospect 193,Customer Expansion,Avery Chen,AI Coach,2026-05-06,2026-09-29,Closed Won,Won,35000.0,0.057,1.0,35000.0,13,36,,
+O0194,Renewal,A003,Clear Manufacturing,Conference,Marcus Bell,Northstar Core,2026-08-12,2026-12-11,Closed Lost,Lost,13100.0,0.156,0.0,0.0,14,12,Price,
+O0195,Upsell,A035,Blue Enterprises,Customer Expansion,Marcus Bell,Analytics Pro,2026-05-08,2026-07-22,Closed Lost,Lost,3900.0,0.07,0.0,0.0,7,12,Timing,
+O0196,New,,Prospect 196,Outbound SDR,Avery Chen,Enterprise Bundle,2026-03-21,2026-08-16,Closed Lost,Lost,16000.0,0.063,0.0,0.0,4,12,Poor fit,
+O0197,New,,Prospect 197,Inbound Content,Avery Chen,Northstar Core,2026-09-25,2027-02-01,Discovery,Open,25000.0,0.016,0.15,3750.0,6,24,,Schedule demo
+O0198,New,,Prospect 198,Outbound SDR,Nina Patel,Northstar Core,2026-04-22,2026-07-17,Closed Lost,Lost,12000.0,0.158,0.0,0.0,17,24,Price,
+O0199,New,,Prospect 199,Outbound SDR,Marcus Bell,Enterprise Bundle,2026-06-30,2026-08-07,Negotiation,Open,16000.0,0.187,0.75,12000.0,35,12,,Executive review
+O0200,New,,Prospect 200,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-03-12,2026-07-08,Proposal,Open,35000.0,0.171,0.65,22750.0,37,24,,Proposal follow-up
+O0201,Renewal,A013,Redwood Health,Inbound Content,Marcus Bell,AI Coach,2026-09-16,2026-12-24,Discovery,Open,31100.0,0.203,0.15,4665.0,7,24,,Schedule demo
+O0202,New,,Prospect 202,Outbound SDR,Nina Patel,Enterprise Bundle,2026-04-19,2026-08-03,Closed Lost,Lost,50000.0,0.122,0.0,0.0,17,12,Timing,
+O0203,New,,Prospect 203,Conference,Marcus Bell,AI Coach,2026-08-03,2026-11-23,Discovery,Open,50000.0,0.202,0.15,7500.0,15,12,,Schedule demo
+O0204,New,,Prospect 204,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-07-06,2026-11-20,Closed Lost,Lost,8000.0,0.08,0.0,0.0,13,24,Price,
+O0205,Upsell,A035,Blue Enterprises,Customer Expansion,Marcus Bell,Analytics Pro,2026-09-01,2026-12-11,Discovery,Open,2600.0,0.086,0.15,390.0,12,12,,Schedule demo
+O0206,Upsell,A050,Blue Solutions,Customer Expansion,Avery Chen,Northstar Core,2026-07-19,2026-12-06,Closed Won,Won,28300.0,0.08,1.0,28300.0,3,36,,
+O0207,New,,Prospect 207,Customer Expansion,Avery Chen,Enterprise Bundle,2026-03-13,2026-04-19,Closed Won,Won,12000.0,0.064,1.0,12000.0,11,12,,
+O0208,New,,Prospect 208,Outbound SDR,Avery Chen,AI Coach,2026-05-01,2026-06-26,Closed Lost,Lost,35000.0,0.077,0.0,0.0,8,12,No budget,
+O0209,Upsell,A039,Harbor Financial,Customer Expansion,Avery Chen,Enterprise Bundle,2026-04-08,2026-08-11,Closed Won,Won,10400.0,0.036,1.0,10400.0,20,36,,
+O0210,New,,Prospect 210,Referral,Marcus Bell,Analytics Pro,2026-05-07,2026-07-28,Proposal,Open,10000.0,0.12,0.65,6500.0,65,12,,Proposal follow-up
+O0211,New,,Prospect 211,Customer Expansion,Avery Chen,Northstar Core,2026-01-05,2026-04-17,Closed Lost,Lost,8000.0,0.127,0.0,0.0,23,24,Lost to competitor,
+O0212,New,,Prospect 212,Referral,Nina Patel,Enterprise Bundle,2026-01-05,2026-05-17,Closed Won,Won,12000.0,0,1.0,12000.0,22,24,,
+O0213,New,,Prospect 213,Inbound Content,Marcus Bell,Analytics Pro,2026-06-04,2026-07-26,Closed Lost,Lost,35000.0,0.27,0.0,0.0,3,12,Lost to competitor,
+O0214,Renewal,A016,Ever Manufacturing,Outbound SDR,Nina Patel,Enterprise Bundle,2026-07-18,2026-10-28,Closed Won,Won,54800.0,0.108,1.0,54800.0,19,12,,
+O0215,Upsell,A016,Ever Manufacturing,Customer Expansion,Marcus Bell,Enterprise Bundle,2026-06-07,2026-09-17,Demo,Open,13200.0,0.225,0.3,3960.0,10,24,,Confirm use case
+O0216,New,,Prospect 216,Inbound Content,Nina Patel,AI Coach,2026-07-06,2026-08-14,Closed Lost,Lost,12000.0,0.015,0.0,0.0,14,12,Price,
+O0217,New,,Prospect 217,Partner,Avery Chen,AI Coach,2026-09-14,2027-01-22,Demo,Open,10000.0,0,0.3,3000.0,4,12,,Confirm use case
+O0218,New,,Prospect 218,Outbound SDR,Avery Chen,Northstar Core,2026-03-29,2026-08-08,Closed Lost,Lost,50000.0,0.113,0.0,0.0,15,36,Timing,
+O0219,Renewal,A048,Ever Systems,Inbound Content,Avery Chen,Enterprise Bundle,2026-07-03,2026-08-10,Closed Won,Won,6100.0,0.072,1.0,6100.0,16,36,,
+O0220,New,,Prospect 220,Partner,Marcus Bell,AI Coach,2026-07-06,2026-10-21,Closed Won,Won,20000.0,0.062,1.0,20000.0,12,12,,

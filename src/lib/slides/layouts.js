@@ -1,17 +1,15 @@
 // Slide layout engine. Every slide is laid out ONCE into a list of drawing operations
 // (rect, line, circle, text, chart) in inches on a 13.333 x 7.5 page. The same operations
 // are replayed by three backends: the in-app SVG preview, the PDF and the PowerPoint.
-import { resolveChart, fmtUnit } from '../deckModel.js';
+import { chartData, fmtUnit } from '../deck.js';
 
 export const PAGE = { w: 13.333, h: 7.5 };
 
-// The BK Consulting Group palette for exported slides. Key names are kept from the original engine:
-// green = primary (navy), green2 = accent (teal), dark = deep navy, mint/mintSoft = accents on dark.
+// York College palette for exported slides.
 export const P = {
-  bg: 'F6F5F2', card: 'FFFFFF', line: 'DCDBD5', dark: '0E2440', green: '17365D', green2: '0E8A8C',
-  mint: '6FD0CF', mintSoft: 'C7DCEB', ink: '1D2430', ink2: '4A5361', ink3: '737B88',
-  good: '2E7D4F', bad: 'B23A30', amber: 'C4820F', rowAlt: 'F8F8F6', white: 'FFFFFF',
-  soft: 'EAEDF0', accentSoft: 'DDF0EF', ramp: ['17365D', '0E8A8C', '6D9BC7', 'A9C9C8'],
+  bg: 'F4F6F5', card: 'FFFFFF', line: 'D9E0DB', dark: '0B3D22', green: '006027', green2: '008350',
+  mint: '9ED9B6', mintSoft: 'CFE6D8', ink: '231F20', ink2: '4A4F4C', ink3: '737A76',
+  good: '1F7A45', bad: 'B3362D', amber: 'C27C0E', rowAlt: 'F7F9F8', white: 'FFFFFF',
 };
 const TONE = { good: P.good, bad: P.bad, warn: P.amber, neutral: P.green };
 const RAG = { G: P.good, Y: 'D69200', R: P.bad };
@@ -21,11 +19,10 @@ export const ICON_NAMES = ['', 'up', 'down', 'cash', 'people', 'target', 'alert'
 
 export const LAYOUTS = {
   summary: {
-    label: 'Executive summary (tiles fill from other slides)',
+    label: 'Executive summary (6 answers)',
     list: { key: 'items', max: 6, add: { answer: '', value: '', tone: 'neutral' }, fields: [
-      { k: 'value', label: 'Key number (blank = from that slide)', words: 2 },
-      { k: 'answer', label: 'Message (blank = that slide’s headline)', words: 12 },
-      { k: 'label', label: 'Tile label (blank = that slide’s section label)', words: 3 },
+      { k: 'value', label: 'Key number (blank = from that question’s slide)', words: 2 },
+      { k: 'answer', label: 'Answer (blank = that slide’s headline)', words: 12 },
       { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
     ] },
   },
@@ -59,9 +56,9 @@ export const LAYOUTS = {
     ] },
   },
   compare: {
-    label: 'Today vs. proposed (arrows)',
+    label: 'Plan vs. our change (arrows)',
     list: { key: 'rows', max: 4, add: { icon: 'flag', from: '', to: '', why: '' }, fields: [
-      { k: 'from', label: 'Today (max 8 words)', words: 8 }, { k: 'to', label: 'Proposed (max 8 words)', words: 8 },
+      { k: 'from', label: 'Current plan says (max 8 words)', words: 8 }, { k: 'to', label: 'We would change to (max 8 words)', words: 8 },
       { k: 'why', label: 'Because (max 10 words)', words: 10 },
       { k: 'icon', label: 'Icon', options: ['flag', 'up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'shield'] },
     ] },
@@ -76,7 +73,7 @@ export const LAYOUTS = {
   cards: {
     label: 'Insight cards (2–6)',
     list: { key: 'cards', max: 6, add: { title: '', body: '', tone: 'neutral' }, fields: [
-      { k: 'title', label: 'Card headline' }, { k: 'body', label: 'Supporting detail (where it came from)', area: true },
+      { k: 'title', label: 'Card headline' }, { k: 'body', label: 'Supporting detail (cite the file)', area: true },
       { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
     ] },
   },
@@ -93,7 +90,7 @@ export const LAYOUTS = {
     chart: true,
     list: { key: 'stats', max: 3, add: { label: '', value: '', delta: '', note: '', tone: 'neutral' }, fields: [
       { k: 'label', label: 'Label', words: 4 }, { k: 'value', label: 'Big number', words: 2 }, { k: 'delta', label: 'Change / comparison', words: 5 },
-      { k: 'note', label: 'Source / note', words: 4 }, { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
+      { k: 'note', label: 'Source file', words: 4 }, { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
     ] },
   },
   kpis: {
@@ -115,21 +112,6 @@ export const LAYOUTS = {
     label: 'Narrative (dark slide)',
     list: { key: 'paragraphs', max: 5, strings: true, add: '', label: 'Paragraph' },
     ask: true,
-  },
-  ranked: {
-    label: 'Ranked list with severity (1–5)',
-    list: { key: 'items', max: 5, add: { title: '', detail: '', score: '', tone: 'neutral' }, fields: [
-      { k: 'title', label: 'Item (max 10 words)', words: 10 }, { k: 'detail', label: 'Evidence (max 18 words)', words: 18 },
-      { k: 'score', label: 'Severity 1–5', options: ['', '1', '2', '3', '4', '5'] },
-      { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
-    ] },
-  },
-  timeline: {
-    label: 'Timeline (fills from the project plan)',
-    list: { key: 'items', max: 7, add: { label: '', start: '1', weeks: '2', owner: '', milestone: '' }, fields: [
-      { k: 'label', label: 'Phase (blank list = from plan)', words: 5 }, { k: 'start', label: 'Start week', words: 1 }, { k: 'weeks', label: 'Weeks', words: 1 },
-      { k: 'owner', label: 'Owner', words: 4 }, { k: 'milestone', label: 'Milestone (optional)', words: 8 },
-    ] },
   },
   bullets: {
     label: 'Bullets (+ optional chart)',
@@ -220,7 +202,7 @@ function chrome(o, slide, deck, n, total, { dark = false } = {}) {
   if (slide.subtitle) o.text(slide.subtitle, { x: M, y: 1.36, w: PAGE.w - 2 * M, h: 0.3 }, { size: 12, italic: true, color: dark ? P.mintSoft : P.ink3, min: 9 });
   if (slide.takeaway && !dark) {
     o.rect(M, BAR_Y, PAGE.w - 2 * M, 0.44, P.dark);
-    o.text((deck.takeawayLabel || 'So what').toUpperCase(), { x: M + 0.2, y: BAR_Y + 0.15, w: 1.6, h: 0.2 }, { size: 8, bold: true, color: P.mint, spacing: 1.5, caps: true, min: 7 });
+    o.text('BOARD TAKEAWAY', { x: M + 0.2, y: BAR_Y + 0.15, w: 1.6, h: 0.2 }, { size: 8, bold: true, color: P.mint, spacing: 1.5, caps: true, min: 7 });
     o.text(slide.takeaway, { x: M + 1.85, y: BAR_Y + 0.11, w: PAGE.w - 2 * M - 2.05, h: 0.24 }, { size: 11, color: P.white, min: 8 });
   }
   const foot = [deck.company, deck.confidential ? 'Confidential' : '', deck.audience].filter(Boolean).join('   |   ');
@@ -235,8 +217,8 @@ export const filled = (arr) => (arr || []).filter((x) => (typeof x === 'string' 
 export function layoutSlide(slide, deck, state, n, total) {
   const o = Ops();
   if (slide.kind === 'title') { titleSlide(o, deck); return o.ops; }
-  if (slide.kind === 'facts') { factsSlide(o, slide, deck, state, n, total); return o.ops; }
-  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets, bignumbers, hero, twocharts, allocation, compare, image: imageLayout, summary, ranked, timeline }[slide.layout] || bullets;
+  if (slide.kind === 'evidence') { evidenceSlide(o, slide, deck, state, n, total); return o.ops; }
+  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets, bignumbers, hero, twocharts, allocation, compare, image: imageLayout, summary }[slide.layout] || bullets;
   fn(o, slide, deck, state, n, total);
   return o.ops;
 }
@@ -245,7 +227,7 @@ function titleSlide(o, deck) {
   o.rect(0, 0, PAGE.w, PAGE.h, P.dark);
   if (deck.image) {
     const box = { x: 7.6, y: 0, w: PAGE.w - 7.6, h: PAGE.h };
-    o.rect(box.x, box.y, box.w, box.h, P.green);
+    o.rect(box.x, box.y, box.w, box.h, '123F28');
     o.image(deck.image, { ...containBox(deck.imageW, deck.imageH, box), clip: box });
   }
   o.rect(0, 0, 0.18, PAGE.h, P.green2);
@@ -258,7 +240,7 @@ function titleSlide(o, deck) {
   if (deck.health) {
     const col = { Green: P.good, Yellow: 'D69200', Red: P.bad }[deck.health] || P.amber;
     o.rect(0.8, y + sh + 0.6, 3.0, 0.48, col, null, 0.06);
-    o.text(`${(deck.healthLabel || 'Overall read')}: ${deck.health}`.toUpperCase(), { x: 0.8, y: y + sh + 0.73, w: 3.0, h: 0.24 }, { size: 10.5, bold: true, color: P.white, align: 'center', spacing: 1, caps: true });
+    o.text(`BUSINESS HEALTH: ${deck.health.toUpperCase()}`, { x: 0.8, y: y + sh + 0.73, w: 3.0, h: 0.24 }, { size: 10.5, bold: true, color: P.white, align: 'center', spacing: 1, caps: true });
   }
   o.text(deck.sourceNote || '', { x: 0.8, y: 5.55, w: tw, h: 0.5 }, { size: 10, color: P.mintSoft, min: 8 });
   o.text([deck.presenters, deck.date].filter(Boolean).join('   ·   '), { x: 0.8, y: 6.35, w: tw, h: 0.3 }, { size: 11, italic: true, color: P.white, min: 8 });
@@ -267,7 +249,7 @@ function titleSlide(o, deck) {
 function cards(o, slide, deck, state, n, total) {
   chrome(o, slide, deck, n, total);
   const items = filled(slide.cards).slice(0, 6);
-  const list = items.length ? items : [{ title: 'Add insight cards', body: 'Each card: a headline and one or two sentences of evidence.', tone: 'neutral' }];
+  const list = items.length ? items : [{ title: 'Add insight cards', body: 'Each card: a headline and one or two sentences of evidence, with the source file.', tone: 'neutral' }];
   const cols = list.length <= 4 ? 2 : 3;
   const rows = Math.ceil(list.length / cols);
   const gap = 0.25, top = BODY_TOP, bottom = bodyBottom(slide);
@@ -340,7 +322,7 @@ function chartLayout(o, slide, deck, state, n, total) {
   const bottom = bodyBottom(slide);
   const hasStats = filled(slide.stats).length > 0;
   const cw = hasStats ? 7.4 : PAGE.w - 2 * M;
-  const data = slide.chart ? resolveChart(slide.chart, state) : null;
+  const data = slide.chart ? chartData(slide.chart, state) : null;
   if (data) o.chart(data, { x: M, y: BODY_TOP, w: cw, h: bottom - BODY_TOP });
   else {
     o.rect(M, BODY_TOP, cw, bottom - BODY_TOP, P.card, P.line);
@@ -355,7 +337,7 @@ function kpis(o, slide, deck, state, n, total) {
   let sp = slide.spotlight || {};
   let hasSpot = [sp.label, sp.value, sp.text].some((v) => String(v || '').trim());
   if (!list.length && !hasSpot && Array.isArray(slide.kpis) && slide.kpis.length === 0) {
-    sp = { label: 'The number that would change our mind', value: '—', caption: 'Metric · threshold · date', text: 'Fill in the spotlight fields in the editor below.' };
+    sp = { label: 'The number that would change our mind', value: '—', caption: 'Metric · threshold · date', text: 'Fill in the spotlight fields in the editor below: which metric, what threshold, by when — and what you would do if it hits.' };
     hasSpot = true;
   }
   const bottom = bodyBottom(slide);
@@ -363,7 +345,7 @@ function kpis(o, slide, deck, state, n, total) {
   const count = Math.max(1, list.length);
   const w = (PAGE.w - 2 * M - gap * (count - 1)) / count;
   const th = !list.length && hasSpot ? -0.3 : hasSpot ? 1.75 : Math.min(2.6, bottom - BODY_TOP);
-  (list.length || hasSpot ? list : [{ label: 'KPI', value: '—', sub: 'Add a number in the editor below' }]).forEach((k, i) => {
+  (list.length || hasSpot ? list : [{ label: 'KPI', value: '—', sub: 'Insert a number from the CRM in the editor below' }]).forEach((k, i) => {
     const x = M + i * (w + gap), y = BODY_TOP;
     o.rect(x, y, w, th, P.card, P.line);
     o.text((k.label || '').toUpperCase(), { x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.4 }, { size: 8.5, bold: true, color: P.ink3, spacing: 1, caps: true, min: 6.5 });
@@ -422,7 +404,7 @@ function narrative(o, slide, deck, state, n, total) {
 function bullets(o, slide, deck, state, n, total) {
   chrome(o, slide, deck, n, total);
   const bottom = bodyBottom(slide);
-  const data = slide.chart ? resolveChart(slide.chart, state) : null;
+  const data = slide.chart ? chartData(slide.chart, state) : null;
   const tw = data ? 6.0 : PAGE.w - 2 * M;
   const list = filled(slide.bullets);
   let y = BODY_TOP + 0.05;
@@ -438,20 +420,20 @@ function bullets(o, slide, deck, state, n, total) {
   }
 }
 
-function factsSlide(o, slide, deck, state, n, total) {
-  chrome(o, { ...slide, eyebrow: slide.eyebrow || 'Appendix', title: slide.title || 'What you told us, in numbers', subtitle: slide.subtitle || 'From the pre-kickoff questionnaire' }, deck, n, total);
-  const ev = (state.facts || []).slice(0, 14);
+function evidenceSlide(o, slide, deck, state, n, total) {
+  chrome(o, { ...slide, eyebrow: slide.eyebrow || 'Appendix', subtitle: slide.subtitle || 'Data points pinned from the CRM, with their source files' }, deck, n, total);
+  const ev = (state.evidence || []).slice(0, 14);
   const top = BODY_TOP - 0.05, rh = Math.min(0.36, (6.85 - top) / (ev.length + 1));
-  const cols = [{ k: 'label', label: 'Question', w: 6.4 }, { k: 'value', label: 'Answer', w: 3.4 }, { k: 'section', label: 'Section', w: 2.333 }];
+  const cols = [{ k: 'label', label: 'Data point', w: 4.6 }, { k: 'value', label: 'Value', w: 4.6 }, { k: 'fileName', label: 'Source file', w: 2.933 }];
   o.rect(M, top, PAGE.w - 2 * M, rh, P.dark);
   let x = M;
   cols.forEach((c) => { o.text(c.label.toUpperCase(), { x: x + 0.1, y: top + rh * 0.3, w: c.w - 0.2, h: rh * 0.5 }, { size: 8, bold: true, color: P.white, spacing: 0.8, caps: true }); x += c.w; });
-  if (!ev.length) o.text('No numeric answers yet.', { x: M, y: top + rh + 0.2, w: 10, h: 0.3 }, { size: 11, color: P.ink3 });
+  if (!ev.length) o.text('No evidence pinned yet. Pin numbers in the CRM tabs to list them here.', { x: M, y: top + rh + 0.2, w: 10, h: 0.3 }, { size: 11, color: P.ink3 });
   ev.forEach((e, i) => {
     const y = top + rh * (i + 1);
     o.rect(M, y, PAGE.w - 2 * M, rh, i % 2 ? P.rowAlt : P.card);
     let cx = M;
-    cols.forEach((c) => { o.text(e[c.k], { x: cx + 0.1, y: y + rh * 0.22, w: c.w - 0.2, h: rh * 0.66 }, { size: 10, color: c.k === 'label' ? P.ink : P.ink2, bold: c.k === 'value', min: 7 }); cx += c.w; });
+    cols.forEach((c) => { o.text(e[c.k], { x: cx + 0.1, y: y + rh * 0.22, w: c.w - 0.2, h: rh * 0.66 }, { size: 10, color: c.k === 'label' ? P.ink : P.ink2, bold: c.k === 'label', min: 7 }); cx += c.w; });
   });
 }
 
@@ -492,7 +474,7 @@ export function containBox(iw, ih, box) {
 function bignumbers(o, slide, deck, state, n, total) {
   chrome(o, slide, deck, n, total);
   const list = filled(slide.items).slice(0, 3);
-  const items = list.length ? list : (slide.items && slide.items.length ? slide.items : [{}]).slice(0, 3).map((it) => ({ icon: it.icon || 'chart', value: '—', label: 'Add a number', sub: 'Use the editor below', tone: 'neutral' }));
+  const items = list.length ? list : (slide.items && slide.items.length ? slide.items : [{}]).slice(0, 3).map((it) => ({ icon: it.icon || 'chart', value: '—', label: 'Insert a number from the CRM', sub: 'Use the picker in the editor below', tone: 'neutral' }));
   const bottom = bodyBottom(slide), gap = 0.3;
   const w = (PAGE.w - 2 * M - gap * (items.length - 1)) / items.length;
   const h = bottom - BODY_TOP;
@@ -515,7 +497,7 @@ function hero(o, slide, deck, state, n, total) {
   const bottom = bodyBottom(slide);
   const stats = filled(slide.stats).slice(0, 3);
   const sw = stats.length ? 3.0 : 0;
-  const data = slide.chart ? resolveChart(slide.chart, state) : null;
+  const data = slide.chart ? chartData(slide.chart, state) : null;
   const cx = M + (sw ? sw + 0.3 : 0), cw = PAGE.w - M - cx;
   if (data) o.chart(data, { x: cx, y: BODY_TOP, w: cw, h: bottom - BODY_TOP, big: true });
   else { o.rect(cx, BODY_TOP, cw, bottom - BODY_TOP, P.card, P.line); o.text('Choose a chart', { x: cx, y: (BODY_TOP + bottom) / 2 - 0.15, w: cw, h: 0.3 }, { size: 13, color: P.ink3, align: 'center' }); }
@@ -538,7 +520,7 @@ function twocharts(o, slide, deck, state, n, total) {
   [slide.chart, slide.chart2].forEach((id, i) => {
     const x = M + i * (w + gap);
     const capH = caps[i] && caps[i].trim() ? 0.55 : 0;
-    const data = id ? resolveChart(id, state) : null;
+    const data = id ? chartData(id, state) : null;
     if (data) o.chart(data, { x, y: BODY_TOP, w, h: bottom - BODY_TOP - capH });
     else { o.rect(x, BODY_TOP, w, bottom - BODY_TOP - capH, P.card, P.line); o.text(`Choose chart ${i + 1}`, { x, y: (BODY_TOP + bottom) / 2 - 0.15, w, h: 0.3 }, { size: 12, color: P.ink3, align: 'center' }); }
     if (capH) o.text(caps[i], { x: x + 0.1, y: bottom - capH + 0.12, w: w - 0.2, h: capH - 0.1 }, { size: 13, bold: true, color: P.ink, align: 'center', min: 9 });
@@ -557,7 +539,7 @@ function allocation(o, slide, deck, state, n, total) {
   const list = items.length ? items : [{ label: 'Add up to four allocations', amount: '', why: '' }];
   const amts = list.map((i) => parseAmount(i.amount));
   const sum = amts.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
-  const colors = P.ramp;
+  const colors = [P.green, '2E8B57', '6BBF8E', 'A9D9BC'];
   const bottom = bodyBottom(slide);
   const compact = (v) => (v >= 1e6 ? `$${+(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `$${+(v / 1e3).toFixed(1)}K` : `$${Math.round(v)}`);
   o.text(sum ? compact(sum) : '$—', { x: M, y: BODY_TOP - 0.05, w: 4.2, h: 0.85 }, { size: 54, bold: true, serif: true, color: P.green, min: 24, lineHeight: 1.0 });
@@ -591,16 +573,16 @@ function compare(o, slide, deck, state, n, total) {
   const h = Math.min(1.15, (bottom - top - gap * (list.length - 1)) / list.length);
   const iconW = 0.95, fw = 3.9, aw = 0.75, tw = 3.9, ww = PAGE.w - 2 * M - iconW - fw - aw - tw - 0.2;
   const fx = M + iconW, ax = fx + fw, tx = ax + aw, wx = tx + tw + 0.2;
-  o.text((slide.fromLabel || 'Today').toUpperCase(), { x: fx, y: BODY_TOP, w: fw, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
-  o.text((slide.toLabel || 'Proposed').toUpperCase(), { x: tx, y: BODY_TOP, w: tw, h: 0.22 }, { size: 9, bold: true, color: P.green2, spacing: 1.5, caps: true });
-  o.text((slide.whyLabel || 'Why').toUpperCase(), { x: wx, y: BODY_TOP, w: ww, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
+  o.text('CURRENT PLAN', { x: fx, y: BODY_TOP, w: fw, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
+  o.text('WHAT WE WOULD CHANGE', { x: tx, y: BODY_TOP, w: tw, h: 0.22 }, { size: 9, bold: true, color: P.green2, spacing: 1.5, caps: true });
+  o.text('BECAUSE', { x: wx, y: BODY_TOP, w: ww, h: 0.22 }, { size: 9, bold: true, color: P.ink3, spacing: 1.5, caps: true });
   list.forEach((r, i) => {
     const y = top + i * (h + gap);
     drawIcon(o, r.icon || 'flag', M + 0.4, y + h / 2, Math.min(0.7, h * 0.75), P.dark);
-    o.rect(fx, y, fw, h, P.soft);
+    o.rect(fx, y, fw, h, 'E6EAE7');
     o.text(r.from, { x: fx + 0.25, y: y + 0.15, w: fw - 0.5, h: h - 0.3 }, { size: 15, color: P.ink2, min: 9, valign: 'middle' });
     poly(o, [[2, 9], [14, 9], [14, 3], [23, 12], [14, 21], [14, 15], [2, 15]], ax + aw / 2, y + h / 2, 0.5, P.green2);
-    o.rect(tx, y, tw, h, P.accentSoft, P.green2);
+    o.rect(tx, y, tw, h, 'E1F1E7', P.green2);
     o.text(r.to, { x: tx + 0.25, y: y + 0.15, w: tw - 0.5, h: h - 0.3 }, { size: 15, bold: true, color: P.green, min: 9, valign: 'middle' });
     o.text(r.why, { x: wx, y: y + 0.12, w: ww, h: h - 0.24 }, { size: 11.5, color: P.ink2, min: 7.5, valign: 'middle' });
   });
@@ -612,9 +594,9 @@ function imageLayout(o, slide, deck, state, n, total) {
   const pts = filled(slide.points).slice(0, 3);
   const iw = pts.length ? 7.6 : PAGE.w - 2 * M;
   const box = { x: M, y: BODY_TOP, w: iw, h: bottom - BODY_TOP };
-  o.rect(box.x, box.y, box.w, box.h, P.soft);
+  o.rect(box.x, box.y, box.w, box.h, 'E6EAE7');
   if (slide.image) o.image(slide.image, { ...containBox(slide.imageW, slide.imageH, box), clip: box });
-  else o.text('Upload an image: a screenshot, a photo, a chart from the client’s own materials', { x: box.x + 0.5, y: box.y + box.h / 2 - 0.3, w: box.w - 1, h: 0.6 }, { size: 13, color: P.ink3, align: 'center' });
+  else o.text('Upload an image: a product screenshot, a customer photo, a chart from another tool', { x: box.x + 0.5, y: box.y + box.h / 2 - 0.3, w: box.w - 1, h: 0.6 }, { size: 13, color: P.ink3, align: 'center' });
   if (!pts.length) return;
   const x = M + iw + 0.35, w = PAGE.w - M - x, gap = 0.2;
   const h = (bottom - BODY_TOP - gap * (pts.length - 1)) / pts.length;
@@ -628,7 +610,9 @@ function imageLayout(o, slide, deck, state, n, total) {
 }
 
 
-// ---------------------------------------------------------------- Executive summary: tiles fill from other slides
+// ---------------------------------------------------------------- Executive summary: one tile per board question
+const QUESTION_LABELS = ['Growth plan', 'CEO dashboard', 'Biggest risk', 'Investment', 'Plan changes', 'Pivot trigger'];
+
 function firstNumber(sl) {
   if (!sl) return { value: '', tone: 'neutral' };
   const pools = [sl.items, sl.stats, sl.kpis, sl.points].filter(Array.isArray);
@@ -641,141 +625,46 @@ function firstNumber(sl) {
     const sum = (sl.items || []).reduce((a, i) => a + (parseAmount(i.amount) || 0), 0);
     if (sum) return { value: sum >= 1e3 ? `$${+(sum / 1e3).toFixed(1)}K` : `$${sum}`, tone: 'neutral' };
   }
-  if (sl.layout === 'ranked' && filled(sl.items).length) return { value: `${filled(sl.items).length} problems`, tone: 'bad' };
   return { value: '', tone: 'neutral' };
 }
 
-// Each tile points at another slide (item.from = slide id). Without a pointer, tiles take the
-// content slides that follow the summary, in order. Typed text always wins over derived text.
+// Derive each tile from the matching "Question N" slide unless the team typed an override.
 export function summaryTiles(slide, deck) {
   const items = slide.items || [];
-  const others = (deck.slides || []).filter((x) => x.kind === 'content' && x.layout !== 'summary' && x.id !== slide.id);
-  const count = Math.max(1, Math.min(6, items.length || 6));
-  const used = new Set(items.map((it) => it?.from).filter(Boolean));
-  const pool = others.filter((x) => !used.has(x.id));
-  return Array.from({ length: count }, (_, i) => {
+  return QUESTION_LABELS.map((label, i) => {
+    const q = (deck.slides || []).find((x) => x.kind === 'content' && x.layout !== 'summary' && new RegExp(`^question\\s*${i + 1}\\b`, 'i').test(x.eyebrow || ''));
     const own = items[i] || {};
-    const src = own.from ? others.find((x) => x.id === own.from) : pool.shift();
-    const derived = firstNumber(src);
+    const derived = firstNumber(q);
+    const fromTitle = q && q.title && !q.hint?.includes(q.title) && !TEMPLATE_TITLES.has(q.title) ? q.title : '';
+    const qLabel = q?.eyebrow ? q.eyebrow.split('·').slice(1).join('·').trim() || label : label;
     return {
-      n: i + 1,
-      label: (own.label || '').trim() || (src?.eyebrow || '').trim() || `Point ${i + 1}`,
-      answer: (own.answer || '').trim() || (src?.title || ''),
+      n: i + 1, label: qLabel,
+      answer: (own.answer || '').trim() || fromTitle,
       value: (own.value || '').trim() || derived.value,
       tone: own.tone && own.tone !== 'neutral' ? own.tone : derived.tone,
     };
-  }).filter((t) => t.answer || t.value);
+  });
 }
+const TEMPLATE_TITLES = new Set(['Is the 2027 growth plan realistic?', 'Three KPIs for the CEO dashboard', 'Our biggest financial or operating risk', 'Where we would invest the next $100,000', 'What we would change in the current plan', 'The data point that would change our recommendation']);
 
 function summary(o, slide, deck, state, n, total) {
   chrome(o, slide, deck, n, total);
   const tiles = summaryTiles(slide, deck);
-  const list = tiles.length ? tiles : [{ n: 1, label: 'Summary', answer: 'Tiles fill in from the other slides’ headlines and numbers', value: '', tone: 'neutral' }];
-  const bottom = bodyBottom(slide), gap = 0.22;
-  const cols = list.length <= 3 ? list.length : list.length === 4 ? 2 : 3;
-  const rows = Math.ceil(list.length / cols);
+  const bottom = bodyBottom(slide), gap = 0.22, cols = 3, rows = 2;
   const w = (PAGE.w - 2 * M - gap * (cols - 1)) / cols;
   const h = (bottom - BODY_TOP - gap * (rows - 1)) / rows;
-  list.forEach((t, i) => {
+  tiles.forEach((t, i) => {
     const x = M + (i % cols) * (w + gap), y = BODY_TOP + Math.floor(i / cols) * (h + gap);
     const col = toneColor(t.tone);
     o.rect(x, y, w, h, P.card, P.line);
     o.rect(x, y, w, 0.07, col);
     o.circle(x + 0.42, y + 0.45, 0.22, P.dark);
-    o.text(String(t.n), { x: x + 0.2, y: y + 0.36, w: 0.44, h: 0.2 }, { size: 10, bold: true, color: P.white, align: 'center', min: 7 });
+    o.text(`Q${t.n}`, { x: x + 0.2, y: y + 0.36, w: 0.44, h: 0.2 }, { size: 9.5, bold: true, color: P.white, align: 'center', min: 7 });
     o.text(t.label.toUpperCase(), { x: x + 0.75, y: y + 0.37, w: w - 0.95, h: 0.2 }, { size: 9, bold: true, color: P.ink3, spacing: 1.2, caps: true, min: 7, maxLines: 1 });
     const vh = t.value ? o.text(t.value, { x: x + 0.25, y: y + 0.78, w: w - 0.5, h: 0.62 }, { size: 34, bold: true, serif: true, color: col, min: 14, lineHeight: 1.0, maxLines: 1 }) : 0;
     const ay = y + 0.78 + (vh ? vh + 0.12 : 0);
-    o.text(t.answer, { x: x + 0.25, y: ay, w: w - 0.5, h: Math.max(0.3, y + h - ay - 0.18) }, { size: rows === 1 ? 16 : 13, bold: true, color: P.ink, min: 10, lineHeight: 1.22 });
+    o.text(t.answer || 'Fills in from this question’s slide headline', { x: x + 0.25, y: ay, w: w - 0.5, h: Math.max(0.3, y + h - ay - 0.18) }, { size: 13, bold: !!t.answer, color: t.answer ? P.ink : P.ink3, min: 11, lineHeight: 1.22 });
   });
-}
-
-// ---------------------------------------------------------------- Ranked list with severity bars
-function ranked(o, slide, deck, state, n, total) {
-  chrome(o, slide, deck, n, total);
-  const list = filled(slide.items).slice(0, 5);
-  const items = list.length ? list : [{ title: 'Add the problems, most severe first', detail: '', score: 0 }];
-  const bottom = bodyBottom(slide), gap = 0.16;
-  const h = Math.min(1.05, (bottom - BODY_TOP - gap * (items.length - 1)) / items.length);
-  const barW = 3.0, barX = PAGE.w - M - barW - 0.25;
-  items.forEach((it, i) => {
-    const y = BODY_TOP + i * (h + gap);
-    const score = Math.max(0, Math.min(5, Number(it.score) || 0));
-    const col = it.tone && it.tone !== 'neutral' ? toneColor(it.tone) : score >= 4 ? P.bad : score >= 3 ? P.amber : P.green;
-    o.rect(M, y, PAGE.w - 2 * M, h, P.card, P.line);
-    o.rect(M, y, 0.08, h, col);
-    o.text(String(i + 1), { x: M + 0.25, y: y + h / 2 - 0.3, w: 0.6, h: 0.6 }, { size: 30, bold: true, serif: true, color: col, align: 'center', min: 14, lineHeight: 1.0, maxLines: 1 });
-    const tx = M + 1.0, tw = barX - tx - 0.35;
-    const th = o.text(it.title, { x: tx, y: y + 0.14, w: tw, h: Math.min(0.62, h * 0.55) }, { size: 17, bold: true, serif: true, color: P.ink, min: 11, lineHeight: 1.12 });
-    o.text(it.detail, { x: tx, y: y + 0.18 + Math.max(th, 0.28), w: tw, h: Math.max(0.2, h - 0.3 - Math.max(th, 0.28)) }, { size: 12, color: P.ink2, min: 8 });
-    if (score) {
-      o.text((slide.scoreLabel || 'Severity').toUpperCase(), { x: barX, y: y + h / 2 - 0.36, w: barW, h: 0.18 }, { size: 7.5, bold: true, color: P.ink3, spacing: 1, caps: true, min: 6.5 });
-      const segW = (barW - 0.75 - 0.08 * 4) / 5;
-      for (let k = 0; k < 5; k++) o.rect(barX + k * (segW + 0.08), y + h / 2 - 0.1, segW, 0.26, k < score ? col : P.soft, null, 0.03);
-      o.text(`${score}/5`, { x: barX + barW - 0.6, y: y + h / 2 - 0.1, w: 0.6, h: 0.3 }, { size: 14, bold: true, color: col, align: 'right', min: 9, maxLines: 1 });
-    }
-  });
-}
-
-// ---------------------------------------------------------------- Timeline (fills from the project plan)
-export function timelineRows(slide, state) {
-  const own = filled(slide.items).filter((r) => String(r.label || '').trim());
-  if (own.length) return own.map((r) => ({ label: r.label, start: Number(r.start) || 1, weeks: Math.max(1, Number(r.weeks) || 1), owner: r.owner || '', milestone: r.milestone || '' }));
-  const plan = state.plan;
-  if (!plan || !Array.isArray(plan.rows)) return [];
-  const phases = [];
-  plan.rows.forEach((r) => {
-    const name = String(r.phase || '').trim() || 'Plan';
-    let p = phases.find((x) => x.label === name);
-    if (!p) { p = { label: name, start: Infinity, end: 0, owners: new Set(), milestone: '' }; phases.push(p); }
-    const st = Math.max(1, Number(r.start) || 1), en = st + Math.max(1, Number(r.weeks) || 1) - 1;
-    p.start = Math.min(p.start, st); p.end = Math.max(p.end, en);
-    if (r.owner) p.owners.add(String(r.owner).split(/[,/&]/)[0].trim());
-    if (r.milestone && !p.milestone) p.milestone = String(r.task || r.deliverable || 'Milestone');
-  });
-  return phases.slice(0, 7).map((p) => ({ label: p.label, start: p.start, weeks: p.end - p.start + 1, owner: [...p.owners].slice(0, 2).join(', '), milestone: p.milestone }));
-}
-
-function timeline(o, slide, deck, state, n, total) {
-  chrome(o, slide, deck, n, total);
-  const rows = timelineRows(slide, state);
-  const bottom = bodyBottom(slide);
-  if (!rows.length) {
-    o.rect(M, BODY_TOP, PAGE.w - 2 * M, bottom - BODY_TOP, P.card, P.line);
-    o.text('Fills in from the project plan once it has phases', { x: M, y: (BODY_TOP + bottom) / 2 - 0.15, w: PAGE.w - 2 * M, h: 0.3 }, { size: 13, color: P.ink3, align: 'center' });
-    return;
-  }
-  const weeks = Math.max(...rows.map((r) => r.start + r.weeks - 1), 4);
-  const labelW = 3.1, x0 = M + labelW, gw = PAGE.w - M - x0 - 0.25;
-  const wk = gw / weeks;
-  const top = BODY_TOP + 0.42;
-  const hasMs = rows.some((r) => r.milestone);
-  const rh = Math.min(0.78, (bottom - top - (hasMs ? 0.45 : 0.1)) / rows.length);
-  o.rect(M, BODY_TOP, PAGE.w - 2 * M, bottom - BODY_TOP, P.card, P.line);
-  const every = weeks > 16 ? 2 : 1;
-  for (let w = 1; w <= weeks; w++) {
-    const x = x0 + (w - 1) * wk;
-    if (w > 1) o.line(x, BODY_TOP + 0.36, x, top + rows.length * rh, w % 4 === 1 ? P.line : 'EEEEEB', 0.5);
-    if ((w - 1) % every === 0) o.text(`W${w}`, { x, y: BODY_TOP + 0.13, w: wk * every, h: 0.2 }, { size: 8.5, bold: true, color: P.ink3, align: 'center', min: 6 });
-  }
-  rows.forEach((r, i) => {
-    const y = top + i * rh;
-    const col = P.ramp[i % P.ramp.length];
-    o.text(r.label, { x: M + 0.2, y: y + rh * 0.14, w: labelW - 0.35, h: rh * 0.48 }, { size: 13, bold: true, color: P.ink, min: 8.5, lineHeight: 1.1 });
-    if (r.owner) o.text(r.owner, { x: M + 0.2, y: y + rh * 0.58, w: labelW - 0.35, h: rh * 0.3 }, { size: 9.5, color: P.ink3, min: 7, maxLines: 1 });
-    const bx = x0 + (r.start - 1) * wk + 0.03, bw = Math.max(0.12, r.weeks * wk - 0.06);
-    o.rect(bx, y + rh * 0.2, bw, rh * 0.56, col, null, 0.05);
-    if (bw > 0.9) o.text(`${r.weeks} wk${r.weeks > 1 ? 's' : ''}`, { x: bx, y: y + rh * 0.36, w: bw, h: rh * 0.3 }, { size: 9.5, bold: true, color: i % P.ramp.length >= 2 ? P.ink : P.white, align: 'center', min: 7, maxLines: 1 });
-    if (r.milestone) {
-      const mx = bx + bw, my = y + rh * 0.48, d = Math.min(0.16, rh * 0.22);
-      o.poly([[mx, my - d], [mx + d, my], [mx, my + d], [mx - d, my]], P.amber);
-    }
-  });
-  if (hasMs) {
-    const ly = Math.min(bottom - 0.3, top + rows.length * rh + 0.1);
-    o.poly([[M + 0.3, ly + 0.02], [M + 0.4, ly + 0.12], [M + 0.3, ly + 0.22], [M + 0.2, ly + 0.12]], P.amber);
-    o.text('Milestone at end of phase', { x: M + 0.5, y: ly + 0.04, w: 4, h: 0.2 }, { size: 9, color: P.ink3, min: 7 });
-  }
 }
 
 // ---------------------------------------------------------------- Chart → primitive ops (preview + PDF)
@@ -791,7 +680,7 @@ export function chartOps(data, box) {
   const n = vals.length;
   if (data.type === 'bar') {
     const labelW = Math.min(1.9, w * 0.32);
-    const max = data.unit === '/5' ? 5 : Math.max(0, ...vals), min = Math.min(0, ...vals), range = max - min || 1;
+    const max = Math.max(0, ...vals), min = Math.min(0, ...vals), range = max - min || 1;
     const px = x + pad + labelW, pw = w - 2 * pad - labelW - 0.85;
     const sx = (v) => px + ((v - min) / range) * pw;
     const rowH = Math.min(0.5, (bottom - top) / n);
