@@ -248,7 +248,8 @@ export const TEMPLATES = {
   board: {
     label: 'Board update — 6 questions (visual)',
     slides: [
-      S('bignumbers', 'Executive summary', 'Our answer in one sentence', 'Headline = your recommendation. Three big numbers that prove it (use “Insert a number from the CRM”).', { items: [{ icon: 'cash' }, { icon: 'alert' }, { icon: 'target' }] }),
+      S('summary', 'Executive summary', 'Our recommendation in one sentence', 'Write your recommendation as the headline. The six tiles fill themselves from your question slides (their headlines and first big number) — type in a tile only to override it.', { items: [{}, {}, {}, {}, {}, {}], takeaway: '' }),
+      S('bignumbers', 'Key numbers', 'The three numbers that matter most', 'Three big numbers that prove your recommendation (use “Insert a number from the CRM”).', { items: [{ icon: 'cash' }, { icon: 'alert' }, { icon: 'target' }] }),
       S('hero', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'Headline = yes / no / partly. Two numbers beside the chart that prove it.', { chart: 'plan', stats: [{}, {}] }),
       S('bignumbers', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'Pick the three KPIs the CEO should watch. Insert each from the CRM, then say what it tells the CEO.', { items: [{ icon: 'chart' }, { icon: 'people' }, { icon: 'cash' }] }),
       S('hero', 'Question 3 · Biggest risk', 'Our biggest financial or operating risk', 'Name one risk in the headline. Show its size and timing.', { chart: 'cash', stats: [{}, {}] }),
@@ -261,7 +262,8 @@ export const TEMPLATES = {
   detailed: {
     label: 'Board update — detailed (more text)',
     slides: [
-      S('cards', 'Executive summary', 'Our answer in one sentence', 'Four short cards: plan realism, biggest risk, where the $100K goes, what changes.', { cards: [{ tone: 'neutral' }, { tone: 'bad' }, { tone: 'good' }, { tone: 'neutral' }] }),
+      S('summary', 'Executive summary', 'Our recommendation in one sentence', 'Fills itself from your question slides; type in a tile to override.', { items: [{}, {}, {}, {}, {}, {}] }),
+      S('cards', 'Key findings', 'What the data tells us', 'Four short cards: plan realism, biggest risk, where the $100K goes, what changes.', { cards: [{ tone: 'neutral' }, { tone: 'bad' }, { tone: 'good' }, { tone: 'neutral' }] }),
       S('scorecard', 'Business scorecard', 'Where the business stands today', 'Pre-filled from the CRM. Check every row and adjust the status colors.', { auto: 'scorecard', subtitle: '2026 actuals and forecast vs. targets' }),
       S('chart', 'Question 1 · Growth plan', 'Is the 2027 growth plan realistic?', 'The two or three numbers that prove your answer.', { chart: 'plan', stats: [{}, {}, {}] }),
       S('kpis', 'Question 2 · CEO dashboard', 'Three KPIs for the CEO dashboard', 'KPI, value, target, source.', { kpis: [{}, {}, {}], spotlight: {} }),
@@ -279,7 +281,7 @@ function fillSlide(t, state) {
   const base = { id: slideId(), kind: 'content', verified: false, notes: '', takeaway: '', subtitle: '', ...JSON.parse(JSON.stringify(t)) };
   if (t.auto === 'scorecard') base.rows = autoScorecard(state);
   if (base.chart && !state.data.files[CHARTS.find((c) => c.id === base.chart)?.needs]) base.chart = '';
-  ['cards', 'stats', 'kpis', 'items', 'rows', 'points'].forEach((k) => { if (base[k] && t.auto !== 'scorecard') base[k] = base[k].map((x) => ({ title: '', body: '', tone: 'neutral', label: '', value: '', delta: '', note: '', sub: '', why: '', amount: '', from: '', to: '', ...x })); });
+  ['cards', 'stats', 'kpis', 'items', 'rows', 'points'].forEach((k) => { if (base[k] && t.auto !== 'scorecard') base[k] = base[k].map((x) => ({ title: '', body: '', tone: 'neutral', label: '', value: '', delta: '', note: '', sub: '', why: '', amount: '', from: '', to: '', answer: '', ...x })); });
   if (base.chart2 && !state.data.files[CHARTS.find((c) => c.id === base.chart2)?.needs]) base.chart2 = '';
   return base;
 }
@@ -307,7 +309,8 @@ export function newDeck(state, templateId = 'board') {
 }
 
 // ---------------------------------------------------------------- AI prompt (structured JSON)
-const LAYOUT_SPEC = `Allowed slide layouts (prefer the first six — this is a VISUAL deck):
+const LAYOUT_SPEC = `Allowed slide layouts (prefer the visual ones — this is a VISUAL deck):
+- "summary": "items": 6 objects [{"value","answer","tone"}] in question order 1–6  (the executive summary: value = the key number ≤ 6 characters; answer = the one-line answer ≤ 12 words). The slide "title" is the overall recommendation.
 - "bignumbers": "items": [{"icon","value","label","sub","tone"}]  (1–3 giant numbers; value ≤ 6 characters like "$888K" or "80%"; label ≤ 8 words; sub = comparison + source file ≤ 8 words)
 - "hero": "chart": chart id, "stats": [{"value","label","tone"}]  (big chart + up to 3 numbers; label ≤ 8 words incl. source file)
 - "allocation": "items": [{"amount","label","why"}]  (amounts like "$40K" that add up to the budget; label ≤ 5 words; why ≤ 10 words incl. source file)
@@ -348,7 +351,7 @@ ${buildDataBrief(state)}`;
 const str = (v) => (v === null || v === undefined ? '' : typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : JSON.stringify(v));
 
 function normalizeSlide(raw, state) {
-  const layouts = ['bignumbers', 'hero', 'twocharts', 'allocation', 'compare', 'image', 'cards', 'scorecard', 'chart', 'kpis', 'decisions', 'narrative', 'bullets'];
+  const layouts = ['summary', 'bignumbers', 'hero', 'twocharts', 'allocation', 'compare', 'image', 'cards', 'scorecard', 'chart', 'kpis', 'decisions', 'narrative', 'bullets'];
   const layout = layouts.includes(raw.layout) ? raw.layout : 'bullets';
   const s = { id: slideId(), kind: 'content', layout, fromAi: true, verified: false,
     eyebrow: str(raw.eyebrow), title: str(raw.title), subtitle: str(raw.subtitle), takeaway: str(raw.takeaway), notes: str(raw.notes) };
@@ -371,6 +374,7 @@ function normalizeSlide(raw, state) {
   if (layout === 'allocation') s.items = arr(raw.items).slice(0, 4).map((c) => pick(c, ['amount', 'label', 'why']));
   if (layout === 'compare') s.rows = arr(raw.rows).slice(0, 4).map((c) => ({ ...pick(c, ['from', 'to', 'why']), icon: icon(c?.icon || 'flag') }));
   if (layout === 'image') s.points = arr(raw.points).slice(0, 3).map((c) => pick(c, ['value', 'label']));
+  if (layout === 'summary') s.items = arr(raw.items).slice(0, 6).map((c) => ({ ...pick(c, ['value', 'answer']), tone: tone(c?.tone) }));
   return s;
 }
 

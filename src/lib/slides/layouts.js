@@ -18,6 +18,14 @@ const RAG = { G: P.good, Y: 'D69200', R: P.bad };
 export const ICON_NAMES = ['', 'up', 'down', 'cash', 'people', 'target', 'alert', 'chart', 'check', 'calendar', 'clock', 'flag', 'shield'];
 
 export const LAYOUTS = {
+  summary: {
+    label: 'Executive summary (6 answers)',
+    list: { key: 'items', max: 6, add: { answer: '', value: '', tone: 'neutral' }, fields: [
+      { k: 'value', label: 'Key number (blank = from that question’s slide)', words: 2 },
+      { k: 'answer', label: 'Answer (blank = that slide’s headline)', words: 12 },
+      { k: 'tone', label: 'Signal', options: ['neutral', 'good', 'bad', 'warn'] },
+    ] },
+  },
   bignumbers: {
     label: 'Big numbers with icons (1–3)',
     list: { key: 'items', max: 3, add: { icon: 'chart', value: '', label: '', sub: '', tone: 'neutral' }, fields: [
@@ -210,7 +218,7 @@ export function layoutSlide(slide, deck, state, n, total) {
   const o = Ops();
   if (slide.kind === 'title') { titleSlide(o, deck); return o.ops; }
   if (slide.kind === 'evidence') { evidenceSlide(o, slide, deck, state, n, total); return o.ops; }
-  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets, bignumbers, hero, twocharts, allocation, compare, image: imageLayout }[slide.layout] || bullets;
+  const fn = { cards, scorecard, chart: chartLayout, kpis, decisions, narrative, bullets, bignumbers, hero, twocharts, allocation, compare, image: imageLayout, summary }[slide.layout] || bullets;
   fn(o, slide, deck, state, n, total);
   return o.ops;
 }
@@ -598,6 +606,64 @@ function imageLayout(o, slide, deck, state, n, total) {
     o.rect(x, y, 0.08, h, P.green);
     const vh = o.text(p.value, { x: x + 0.3, y: y + Math.max(0.15, h / 2 - 0.6), w: w - 0.45, h: 0.75 }, { size: 38, bold: true, serif: true, color: P.green, min: 13, lineHeight: 1.0, maxLines: 1 });
     o.text(p.label, { x: x + 0.3, y: y + Math.max(0.15, h / 2 - 0.6) + vh + 0.08, w: w - 0.45, h: Math.max(0.3, h / 2) }, { size: 13, color: P.ink2, min: 8 });
+  });
+}
+
+
+// ---------------------------------------------------------------- Executive summary: one tile per board question
+const QUESTION_LABELS = ['Growth plan', 'CEO dashboard', 'Biggest risk', 'Investment', 'Plan changes', 'Pivot trigger'];
+
+function firstNumber(sl) {
+  if (!sl) return { value: '', tone: 'neutral' };
+  const pools = [sl.items, sl.stats, sl.kpis, sl.points].filter(Array.isArray);
+  for (const pool of pools) for (const it of pool) {
+    const v = String(it?.value || it?.amount || '').trim();
+    if (v && v !== '—') return { value: v, tone: it.tone || 'neutral' };
+  }
+  if (sl.spotlight?.value) return { value: sl.spotlight.value, tone: 'bad' };
+  if (sl.layout === 'allocation') {
+    const sum = (sl.items || []).reduce((a, i) => a + (parseAmount(i.amount) || 0), 0);
+    if (sum) return { value: sum >= 1e3 ? `$${+(sum / 1e3).toFixed(1)}K` : `$${sum}`, tone: 'neutral' };
+  }
+  return { value: '', tone: 'neutral' };
+}
+
+// Derive each tile from the matching "Question N" slide unless the team typed an override.
+export function summaryTiles(slide, deck) {
+  const items = slide.items || [];
+  return QUESTION_LABELS.map((label, i) => {
+    const q = (deck.slides || []).find((x) => x.kind === 'content' && x.layout !== 'summary' && new RegExp(`^question\\s*${i + 1}\\b`, 'i').test(x.eyebrow || ''));
+    const own = items[i] || {};
+    const derived = firstNumber(q);
+    const fromTitle = q && q.title && !q.hint?.includes(q.title) && !TEMPLATE_TITLES.has(q.title) ? q.title : '';
+    const qLabel = q?.eyebrow ? q.eyebrow.split('·').slice(1).join('·').trim() || label : label;
+    return {
+      n: i + 1, label: qLabel,
+      answer: (own.answer || '').trim() || fromTitle,
+      value: (own.value || '').trim() || derived.value,
+      tone: own.tone && own.tone !== 'neutral' ? own.tone : derived.tone,
+    };
+  });
+}
+const TEMPLATE_TITLES = new Set(['Is the 2027 growth plan realistic?', 'Three KPIs for the CEO dashboard', 'Our biggest financial or operating risk', 'Where we would invest the next $100,000', 'What we would change in the current plan', 'The data point that would change our recommendation']);
+
+function summary(o, slide, deck, state, n, total) {
+  chrome(o, slide, deck, n, total);
+  const tiles = summaryTiles(slide, deck);
+  const bottom = bodyBottom(slide), gap = 0.22, cols = 3, rows = 2;
+  const w = (PAGE.w - 2 * M - gap * (cols - 1)) / cols;
+  const h = (bottom - BODY_TOP - gap * (rows - 1)) / rows;
+  tiles.forEach((t, i) => {
+    const x = M + (i % cols) * (w + gap), y = BODY_TOP + Math.floor(i / cols) * (h + gap);
+    const col = toneColor(t.tone);
+    o.rect(x, y, w, h, P.card, P.line);
+    o.rect(x, y, w, 0.07, col);
+    o.circle(x + 0.42, y + 0.45, 0.22, P.dark);
+    o.text(`Q${t.n}`, { x: x + 0.2, y: y + 0.36, w: 0.44, h: 0.2 }, { size: 9.5, bold: true, color: P.white, align: 'center', min: 7 });
+    o.text(t.label.toUpperCase(), { x: x + 0.75, y: y + 0.37, w: w - 0.95, h: 0.2 }, { size: 9, bold: true, color: P.ink3, spacing: 1.2, caps: true, min: 7, maxLines: 1 });
+    const vh = t.value ? o.text(t.value, { x: x + 0.25, y: y + 0.78, w: w - 0.5, h: 0.62 }, { size: 34, bold: true, serif: true, color: col, min: 14, lineHeight: 1.0, maxLines: 1 }) : 0;
+    const ay = y + 0.78 + (vh ? vh + 0.12 : 0);
+    o.text(t.answer || 'Fills in from this question’s slide headline', { x: x + 0.25, y: ay, w: w - 0.5, h: Math.max(0.3, y + h - ay - 0.18) }, { size: 13, bold: !!t.answer, color: t.answer ? P.ink : P.ink3, min: 11, lineHeight: 1.22 });
   });
 }
 

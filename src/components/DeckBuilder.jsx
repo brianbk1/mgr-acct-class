@@ -94,7 +94,8 @@ export default function DeckBuilder({ state, setState, goToCrm }) {
     setDeck((d) => {
       const arr = [...d.slides];
       const ev = arr.findIndex((x) => x.kind === 'evidence');
-      arr.splice(ev >= 0 ? ev : arr.length, 0, s);
+      const at = layout === 'summary' ? 1 : ev >= 0 ? ev : arr.length;
+      arr.splice(at, 0, layout === 'summary' ? { ...s, eyebrow: 'Executive summary', title: 'Our recommendation in one sentence', items: [{}, {}, {}, {}, {}, {}] } : s);
       return { ...d, slides: arr };
     });
     setSel(s.id);
