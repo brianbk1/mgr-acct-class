@@ -1,0 +1,28 @@
+NORTHSTAR LEARNING SYSTEMS - MANAGEMENT TEAM CASE
+
+All data in this case is fictional and synthetic.
+
+Situation
+Northstar Learning Systems is a B2B SaaS company selling workforce training and simulation software. Management wants to grow from approximately $820,000 of 2026 revenue toward $1.2 million in 2027 while protecting cash and deciding whether to expand into healthcare.
+
+Your role
+You are the management team preparing a recommendation for the board. You may use AI to analyze the provided CSV files, but your team is responsible for validating the conclusions and choosing what matters.
+
+Deliverable - 1 page or 3-minute board update
+1. Is the growth plan realistic? Why or why not?
+2. What are the three KPIs you would put on the CEO dashboard?
+3. What is the biggest financial or operating risk?
+4. Where would you invest the next $100,000?
+5. What would you change in the current plan?
+6. What specific data point would cause you to pivot your recommendation?
+
+Evidence requirement
+Use at least five specific data points from at least three different files.
+
+Suggested AI prompts
+- Summarize the three biggest risks in these datasets and cite the rows/fields that support each conclusion.
+- Compare sales sources by conversion, pipeline quality, and likely revenue contribution.
+- Identify accounts at greatest renewal risk and the operational factors associated with that risk.
+- Identify customers that generate high revenue but poor contribution or high support burden.
+- Pressure-test the 2027 management plan. Which assumptions appear least supported by the 2026 data?
+- Recommend how to allocate the next $100,000 across product, sales, marketing, customer success, or new-market expansion.
